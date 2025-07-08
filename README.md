@@ -1,10 +1,18 @@
-# Cryptocurrency Discord Bot v2.0
+# Cryptocurrency Discord Bot v2.1
 
 ### Updated for Latest Node.js and Modern Discord.js
 
 A comprehensive cryptocurrency Discord bot that integrates with wallet daemons via RPC commands, stores data in MariaDB/MySQL database, and provides a full suite of wallet management features for Discord servers.
 
-## 🚀 New Features in v2.0
+## 🚀 New Features in v2.1
+
+- **Latest Package Versions** - All dependencies updated to their latest stable versions
+- **Enhanced Storage System** - Updated lowdb v7 with improved performance and async/await patterns
+- **Better Error Handling** - More robust error handling and logging throughout
+- **Improved Performance** - Optimized database connections and API calls
+- **Modern JavaScript** - Enhanced async/await patterns and ES module compatibility
+
+## 🚀 Features in v2.0
 
 - **Updated for Node.js 18+** - Compatible with the latest Node.js versions
 - **Discord.js v14** - Updated to use the latest Discord.js library with modern intents system
@@ -24,7 +32,7 @@ A comprehensive cryptocurrency Discord bot that integrates with wallet daemons v
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/yourusername/cryptocurrency-crypto-bot.git
    cd cryptocurrency-crypto-bot
    ```
 
@@ -159,6 +167,18 @@ The bot uses several tables:
 - `log` - Activity logging
 - `coin_price_history` - Price tracking (if enabled)
 
+## 📦 Latest Package Versions (v2.1)
+
+- **discord.js**: ^14.16.3 (Latest Discord API support)
+- **mysql2**: ^3.11.4 (Latest MySQL driver with performance improvements)
+- **big.js**: ^6.2.2 (Latest arbitrary precision arithmetic)
+- **moment-timezone**: ^0.5.46 (Latest timezone handling)
+- **log4js**: ^6.9.1 (Latest logging framework)
+- **lowdb**: ^7.0.1 (Latest JSON database with async/await)
+- **bitcoin-core**: ^4.2.0 (Latest Bitcoin RPC client)
+- **axios**: ^1.7.9 (Latest HTTP client)
+- **nodemon**: ^3.1.7 (Latest development tool)
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please:
@@ -179,6 +199,15 @@ For support and questions:
 - Review the logs for error messages
 - Ensure your wallet daemon is running and accessible
 - Verify database connectivity
+- Open an issue on GitHub
+
+## 🔄 Migration from v2.0
+
+If upgrading from v2.0:
+1. Backup your database and configuration
+2. Run `npm install` to update to latest packages
+3. Test in a development environment first
+4. The storage system now uses async/await patterns
 
 ## 🔄 Migration from v1.x
 

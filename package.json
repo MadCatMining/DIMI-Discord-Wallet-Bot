@@ -1,6 +1,6 @@
 {
   "name": "cryptocurrency-crypto-bot",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Cryptocurrency-crypto-bot is an open-source Node.js wallet bot for Discord.",
   "main": "./index.js",
   "scripts": {
@@ -22,16 +22,35 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "discord.js": "^14.14.1",
-    "mysql2": "^3.6.5",
-    "big.js": "^6.2.1",
-    "moment-timezone": "^0.5.43",
+    "discord.js": "^14.16.3",
+    "mysql2": "^3.11.4",
+    "big.js": "^6.2.2",
+    "moment-timezone": "^0.5.46",
     "log4js": "^6.9.1",
     "lowdb": "^7.0.1",
     "bitcoin-core": "^4.2.0",
-    "axios": "^1.6.2"
+    "axios": "^1.7.9"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
-  }
+    "nodemon": "^3.1.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/cryptocurrency-crypto-bot.git"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "cryptocurrency",
+    "wallet",
+    "bitcoin",
+    "altcoin",
+    "tip",
+    "rain",
+    "staking"
+  ],
+  "bugs": {
+    "url": "https://github.com/yourusername/cryptocurrency-crypto-bot/issues"
+  },
+  "homepage": "https://github.com/yourusername/cryptocurrency-crypto-bot#readme"
 }
