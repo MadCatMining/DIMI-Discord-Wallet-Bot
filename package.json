@@ -27,7 +27,7 @@
     "big.js": "^6.2.2",
     "moment-timezone": "^0.5.46",
     "log4js": "^6.9.1",
-    "lowdb": "^7.0.1",
+    "lowdb": "^6.1.1",
     "bitcoin-core": "^4.2.0",
     "axios": "^1.7.9"
   },

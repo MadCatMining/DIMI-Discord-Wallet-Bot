@@ -15,20 +15,19 @@ var log = require("./log.js");
 
 // https://github.com/typicode/lowdb
 // lowdb for content that is not as important but needs to be queried fast
-const { Low } = require('lowdb');
-const { JSONFile } = require('lowdb/node');
+const { Low, JSONFile } = require('lowdb');
 const path = require('path');
 
 // Create adapter and database
 const file = path.join(process.cwd(), 'lowdb', 'lowdb.json');
 const adapter = new JSONFile(file);
-const db = new Low(adapter, {});
+const db = new Low(adapter);
 
 // Initialize database
 (async () => {
     try {
         await db.read();
-        db.data ||= {};
+        db.data = db.data || {};
         await db.write();
     } catch (error) {
         console.error('Failed to initialize lowdb:', error);
