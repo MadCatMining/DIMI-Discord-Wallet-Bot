@@ -18,8 +18,18 @@ var log = require("./functions/log.js");
 // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 /* ------------------------------------------------------------------------------ */
 
-const { Client } = require('discord.js');
-const client = new Client();
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildMessageReactions
+    ],
+    partials: [Partials.Channel]
+});
+
 global.globalClient = client;
 
 var cooldownTimes = {}; // Cooldown timers by user, id and timestamp
@@ -43,13 +53,19 @@ process.on('unhandledRejection', error => console.error('Uncaught Promise Reject
 
 client.on('ready', () => {
   log.log_write_console(config.messages.botStarted + ` ${client.user.tag}!`);
-  client.user.setPresence({ status: 'online', game: { name: config.bot.gameMessage } }); 
+  client.user.setPresence({ 
+    status: 'online', 
+    activities: [{ 
+      name: config.bot.gameMessage,
+      type: 0 // PLAYING
+    }] 
+  }); 
   if(config.bot.setNewAvatar){
     client.user.setAvatar(config.bot.avatar); 
   } 
 });
 
-client.on('message', msg => {
+client.on('messageCreate', msg => {
   
   var userID = msg.author.id;
   var userName = msg.author;
@@ -85,7 +101,7 @@ client.on('message', msg => {
 if(messageContent.startsWith(config.bot.commandPrefix)){
 
     // Get user role if not direct message 
-    if(messageType !== 'dm'){
+    if(messageType !== 1){ // 1 = DM in Discord.js v14
       try{
         var userRoles = msg.member.roles;
       }catch (error){
@@ -122,12 +138,12 @@ if(messageContent.startsWith(config.bot.commandPrefix)){
     if(config.bot.allowAllChannels == "true")
         return;
     else if(config.bot.allowAllChannels == false)
-        if(!check.check_respond_channel(channelID) && messageType !== 'dm')
+        if(!check.check_respond_channel(channelID) && messageType !== 1) // 1 = DM
         return;
 
     // Check if admin mode is enabled and only allow commands from admins
     if(config.bot.adminMode && userRole != 3){
-      if(messageType !== 'dm')
+      if(messageType !== 1) // 1 = DM
         msg.delete();
         //msg,replyType,replyUsername,senderMessageType,replyEmbedColor,replyAuthor,replyTitle,replyFields,replyDescription,replyFooter,replyThumbnail,replyImage,replyTimestamp
         chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.adminMode,false,false,false,false);
@@ -145,7 +161,7 @@ if(messageContent.startsWith(config.bot.commandPrefix)){
     }
 
     // Check if direct messages to bot are disabled
-    if(!config.bot.allowDM && messageType === 'dm'){ 
+    if(!config.bot.allowDM && messageType === 1){ // 1 = DM
       //msg,replyType,replyUsername,senderMessageType,replyEmbedColor,replyAuthor,replyTitle,replyFields,replyDescription,replyFooter,replyThumbnail,replyImage,replyTimestamp
       chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.DMDisabled,false,false,false,false);
       return;
@@ -154,7 +170,7 @@ if(messageContent.startsWith(config.bot.commandPrefix)){
     // Check if its a valid message and if it use the right prefix
     if(!check.check_valid_content(messageContent)){ // if not valid
       // Delete message if not direct message and delete
-      if(messageType !== 'dm')
+      if(messageType !== 1) // 1 = DM
         msg.delete();
       //msg,replyType,replyUsername,senderMessageType,replyEmbedColor,replyAuthor,replyTitle,replyFields,replyDescription,replyFooter,replyThumbnail,replyImage,replyTimestamp
       chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);

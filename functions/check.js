@@ -12,7 +12,7 @@ try{
 /* ------------------------------------------------------------------------------ */
 
 const Big = require('big.js'); // https://github.com/MikeMcl/big.js -> http://mikemcl.github.io/big.js/
-const rp = require('request-promise');
+const axios = require('axios');
 const { bot } = require('../config');
 
 /* ------------------------------------------------------------------------------ */
@@ -121,7 +121,7 @@ module.exports = {
     /* ------------------------------------------------------------------------------ */
     check_respond_channel: function(channelID){
         if (config.bot.allowAllChannels == true) {
-            return;
+            return true;
         } else if(config.bot.allowAllChannels == false) {
             var respondChannelIDs = {};
             for (var i = 0 ; i < config.bot.respondChannelIDs.length ; ++i)
@@ -146,7 +146,7 @@ module.exports = {
         if(moderatorIDs[userID])
             return 2; // if moderator
         if(userRoles !== "verified"){
-            if(userRoles.find(x => x.name === config.bot.vipGroupName))
+            if(userRoles && userRoles.cache && userRoles.cache.find(x => x.name === config.bot.vipGroupName))
             return 1; // if vip user
         }
         return 0; // If no role
@@ -155,64 +155,57 @@ module.exports = {
     /* ------------------------------------------------------------------------------ */
     // Get current currency price for coin id
     /* ------------------------------------------------------------------------------ */
-    check_get_coin_price: function(){ 
-        return new Promise((resolve, reject)=>{
-
+    check_get_coin_price: async function(){ 
+        try {
             var apiService = config.coinPrice.apiService;
             var requestOptions = {}; 
 
             switch (apiService) {
                 case 'coinmarketcap':
-                        requestOptions = {
-                            method: 'GET',
-                            uri: 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
-                            qs: {
-                                'symbol': config.coinPrice.coinSymbol,
-                                'convert': config.coinPrice.currency
-                            },
-                            headers: {
-                                'X-CMC_PRO_API_KEY': config.coinPrice.apiKey
-                            },
-                            json: true,
-                            gzip: true
-                        };
-                        rp(requestOptions).then(response => {
-                            if(response.status.error_code > 0){
-                                resolve(false);
-                            }else{
-                                resolve(response.data[config.coinPrice.coinSymbol].quote[config.coinPrice.currency].price);
-                            }
-                        }).catch((err) => {
-                            resolve(false);
-                        });
-                    break;
+                    requestOptions = {
+                        method: 'GET',
+                        url: 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
+                        params: {
+                            'symbol': config.coinPrice.coinSymbol,
+                            'convert': config.coinPrice.currency
+                        },
+                        headers: {
+                            'X-CMC_PRO_API_KEY': config.coinPrice.apiKey
+                        }
+                    };
+                    
+                    const cmcResponse = await axios(requestOptions);
+                    if(cmcResponse.data.status.error_code > 0){
+                        return false;
+                    } else {
+                        return cmcResponse.data.data[config.coinPrice.coinSymbol].quote[config.coinPrice.currency].price;
+                    }
+                    
                 case 'cryptocompare':
-                        requestOptions = {
-                            method: 'GET',
-                            uri: 'https://min-api.cryptocompare.com/data/price',
-                            qs: {
-                                'fsym': config.coinPrice.coinSymbol,
-                                'tsyms': config.coinPrice.currency,
-                                'api_key': config.coinPrice.apiKey
-                            },
-                            json: true,
-                            gzip: true
-                        };
-                        rp(requestOptions).then(response => {
-                            if(response.Response == "Error"){
-                                resolve(false);
-                            }else{
-                                resolve(response[config.coinPrice.currency]);
-                            }
-                        }).catch((err) => {
-                            resolve(false);
-                        });
-                    break;
+                    requestOptions = {
+                        method: 'GET',
+                        url: 'https://min-api.cryptocompare.com/data/price',
+                        params: {
+                            'fsym': config.coinPrice.coinSymbol,
+                            'tsyms': config.coinPrice.currency,
+                            'api_key': config.coinPrice.apiKey
+                        }
+                    };
+                    
+                    const ccResponse = await axios(requestOptions);
+                    if(ccResponse.data.Response == "Error"){
+                        return false;
+                    } else {
+                        return ccResponse.data[config.coinPrice.currency];
+                    }
+                    
                 default:
-                    resolve(false);
+                    return false;
             }
-
-        });
+        } catch (error) {
+            console.error('Error fetching coin price:', error);
+            return false;
+        }
     }
     
 };

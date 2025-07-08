@@ -13,9 +13,17 @@ var log = require('./log.js');
 // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 /* ------------------------------------------------------------------------------ */
 
-// A node.js library for communicating with Bitcoin daemon. -> https://www.npmjs.com/package/altcoin-rpc
-const Client = require('altcoin-rpc');
-const coinClient = new Client({ host: config.wallet.server, username: config.wallet.user, password: config.wallet.password, port: config.wallet.port });
+// Bitcoin RPC client for newer wallet versions
+const BitcoinRPC = require('node-bitcoin-rpc');
+
+// Initialize RPC client
+const coinClient = new BitcoinRPC({
+    host: config.wallet.server,
+    port: config.wallet.port,
+    username: config.wallet.user,
+    password: config.wallet.password,
+    timeout: 30000
+});
 
 const Big = require('big.js'); // https://github.com/MikeMcl/big.js -> http://mikemcl.github.io/big.js/
 
@@ -31,7 +39,7 @@ module.exports = {
 
     wallet_create_deposit_address: function(){
         return new Promise((resolve, reject)=>{
-            coinClient.getNewAddress(function(error, result) {
+            coinClient.call('getnewaddress', [], function(error, result) {
                 if(error){
                     var errorMessage = "wallet_create_deposit_address: Wallet query problem. (getnewaddress)";
                     if(config.bot.errorLogging){
@@ -54,9 +62,9 @@ module.exports = {
 
     wallet_get_latest_deposits: function(){
         return new Promise((resolve, reject)=>{
-            coinClient.listTransactions('*', config.wallet.depositsToCheck, function(error, result) {
+            coinClient.call('listtransactions', ['*', config.wallet.depositsToCheck], function(error, result) {
                 if(error){
-                    var errorMessage = "wallet_get_latest_deposits: Wallet query problem. (listTransactions)";
+                    var errorMessage = "wallet_get_latest_deposits: Wallet query problem. (listtransactions)";
                     if(config.bot.errorLogging){
                         log.log_write_file(errorMessage);
                         log.log_write_file(error);
@@ -77,9 +85,9 @@ module.exports = {
 
     wallet_validate_address: function(address){
         return new Promise((resolve, reject)=>{
-            coinClient.validateAddress(address, function(error, result) {
+            coinClient.call('validateaddress', [address], function(error, result) {
                 if(error){
-                    var errorMessage = "wallet_validate_address: Wallet query problem. (validateAddress)";
+                    var errorMessage = "wallet_validate_address: Wallet query problem. (validateaddress)";
                     if(config.bot.errorLogging){
                         log.log_write_file(errorMessage);
                         log.log_write_file(error);
@@ -100,9 +108,9 @@ module.exports = {
 
     wallet_send_to_address: function(address,amount){
         return new Promise((resolve, reject)=>{
-            coinClient.sendToAddress(address,amount, function(error, result) {
+            coinClient.call('sendtoaddress', [address, amount], function(error, result) {
                 if(error){
-                    var errorMessage = "wallet_send_to_address: Wallet query problem. (sendToAddress)";
+                    var errorMessage = "wallet_send_to_address: Wallet query problem. (sendtoaddress)";
                     if(config.bot.errorLogging){
                         log.log_write_file(errorMessage);
                         log.log_write_file(error);
@@ -123,9 +131,9 @@ module.exports = {
 
     wallet_get_transaction: function(txid){
         return new Promise((resolve, reject)=>{
-            coinClient.getTransaction(txid, function(error, result) {
+            coinClient.call('gettransaction', [txid], function(error, result) {
                 if(error){
-                    var errorMessage = "wallet_get_transaction: Wallet query problem. (getTransaction)";
+                    var errorMessage = "wallet_get_transaction: Wallet query problem. (gettransaction)";
                     if(config.bot.errorLogging){
                         log.log_write_file(errorMessage);
                         log.log_write_file(error);
@@ -146,9 +154,9 @@ module.exports = {
 
     wallet_get_block: function(blockhash){
         return new Promise((resolve, reject)=>{
-            coinClient.getBlock(blockhash, function(error, result) {
+            coinClient.call('getblock', [blockhash], function(error, result) {
                 if(error){
-                    var errorMessage = "wallet_get_block: Wallet query problem. (getBlock)";
+                    var errorMessage = "wallet_get_block: Wallet query problem. (getblock)";
                     if(config.bot.errorLogging){
                         log.log_write_file(errorMessage);
                         log.log_write_file(error);
@@ -169,9 +177,9 @@ module.exports = {
 
     wallet_get_balance: function(){
         return new Promise((resolve, reject)=>{
-            coinClient.getBalance('*',function(error, result) {
+            coinClient.call('getbalance', ['*'], function(error, result) {
                 if(error){
-                    var errorMessage = "wallet_get_balance: Wallet query problem. (getBalance)";
+                    var errorMessage = "wallet_get_balance: Wallet query problem. (getbalance)";
                     if(config.bot.errorLogging){
                         log.log_write_file(errorMessage);
                         log.log_write_file(error);
@@ -187,14 +195,83 @@ module.exports = {
     },
 
     /* ------------------------------------------------------------------------------ */
-    // Get wallet info
+    // Get wallet info - Updated for newer wallet versions
     /* ------------------------------------------------------------------------------ */
 
     wallet_get_info: function(){
         return new Promise((resolve, reject)=>{
-            coinClient.getInfo(function(error, result) {
+            // Try getwalletinfo first (newer wallets), fallback to getinfo (older wallets)
+            coinClient.call('getwalletinfo', [], function(error, result) {
                 if(error){
-                    var errorMessage = "wallet_get_info: Wallet query problem. (getInfo)";
+                    // Fallback to getinfo for older wallets
+                    coinClient.call('getinfo', [], function(error2, result2) {
+                        if(error2){
+                            var errorMessage = "wallet_get_info: Wallet query problem. (getwalletinfo/getinfo)";
+                            if(config.bot.errorLogging){
+                                log.log_write_file(errorMessage);
+                                log.log_write_file(error2);
+                            }
+                            log.log_write_console(errorMessage);
+                            log.log_write_console(error2);
+                            resolve('error');
+                        }else{
+                            resolve(result2);
+                        }
+                    });
+                }else{
+                    // For newer wallets, we might need additional info from getblockchaininfo
+                    coinClient.call('getblockchaininfo', [], function(error3, blockchainInfo) {
+                        if(error3){
+                            // If getblockchaininfo fails, just return wallet info
+                            resolve(result);
+                        }else{
+                            // Merge wallet info with blockchain info for compatibility
+                            const combinedInfo = {
+                                ...result,
+                                blocks: blockchainInfo.blocks,
+                                difficulty: blockchainInfo.difficulty,
+                                connections: blockchainInfo.connections || 0
+                            };
+                            resolve(combinedInfo);
+                        }
+                    });
+                }   
+            });
+        });
+    },
+
+    /* ------------------------------------------------------------------------------ */
+    // Get network info - For newer wallet versions
+    /* ------------------------------------------------------------------------------ */
+
+    wallet_get_network_info: function(){
+        return new Promise((resolve, reject)=>{
+            coinClient.call('getnetworkinfo', [], function(error, result) {
+                if(error){
+                    var errorMessage = "wallet_get_network_info: Wallet query problem. (getnetworkinfo)";
+                    if(config.bot.errorLogging){
+                        log.log_write_file(errorMessage);
+                        log.log_write_file(error);
+                    }
+                    log.log_write_console(errorMessage);
+                    log.log_write_console(error);
+                    resolve('error');
+                }else{
+                    resolve(result);
+                }   
+            });
+        });
+    },
+
+    /* ------------------------------------------------------------------------------ */
+    // Get blockchain info - For newer wallet versions
+    /* ------------------------------------------------------------------------------ */
+
+    wallet_get_blockchain_info: function(){
+        return new Promise((resolve, reject)=>{
+            coinClient.call('getblockchaininfo', [], function(error, result) {
+                if(error){
+                    var errorMessage = "wallet_get_blockchain_info: Wallet query problem. (getblockchaininfo)";
                     if(config.bot.errorLogging){
                         log.log_write_file(errorMessage);
                         log.log_write_file(error);
