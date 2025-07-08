@@ -28,7 +28,7 @@
     "moment-timezone": "^0.5.43",
     "log4js": "^6.9.1",
     "lowdb": "^7.0.1",
-    "node-bitcoin-rpc": "^2.0.0",
+    "bitcoin-core": "^4.2.0",
     "axios": "^1.6.2"
   },
   "devDependencies": {
