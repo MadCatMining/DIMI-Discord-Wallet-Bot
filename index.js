@@ -25,11 +25,13 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.GuildMessageReactions
+        GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.GuildMembers
     ],
     partials: [Partials.Channel]
 });
 
+// Make client globally available
 global.globalClient = client;
 
 var cooldownTimes = {}; // Cooldown timers by user, id and timestamp
