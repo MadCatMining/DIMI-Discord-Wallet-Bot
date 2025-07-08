@@ -15,24 +15,17 @@ var log = require("./log.js");
 
 // https://github.com/typicode/lowdb
 // lowdb for content that is not as important but needs to be queried fast
-const { Low, JSONFile } = require('lowdb');
+const low = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
 const path = require('path');
 
 // Create adapter and database
 const file = path.join(process.cwd(), 'lowdb', 'lowdb.json');
-const adapter = new JSONFile(file);
-const db = new Low(adapter);
+const adapter = new FileSync(file);
+const db = low(adapter);
 
-// Initialize database
-(async () => {
-    try {
-        await db.read();
-        db.data = db.data || {};
-        await db.write();
-    } catch (error) {
-        console.error('Failed to initialize lowdb:', error);
-    }
-})();
+// Set defaults (runs only once)
+db.defaults({}).write();
 
 /* ------------------------------------------------------------------------------ */
 // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -44,14 +37,12 @@ module.exports = {
     // Write to local storage
     /* ------------------------------------------------------------------------------ */
 
-    storage_write_local_storage: async function(userID, valueName, value) {
+    storage_write_local_storage: function(userID, valueName, value) {
         try {
-            await db.read();
-            if (!db.data[userID]) {
-                db.data[userID] = {};
+            if (!db.has(userID).value()) {
+                db.set(userID, {}).write();
             }
-            db.data[userID][valueName] = value;
-            await db.write();
+            db.set(`${userID}.${valueName}`, value).write();
             return true;
         } catch (error) {
             var errorMessage = "storage_write_local_storage: Can't write to local storage.";
@@ -69,18 +60,15 @@ module.exports = {
     // Delete from local storage
     /* ------------------------------------------------------------------------------ */
 
-    storage_delete_local_storage: async function(userID, valueName) {
+    storage_delete_local_storage: function(userID, valueName) {
         try {
-            await db.read();
-            if (db.data[userID] && db.data[userID][valueName]) {
-                delete db.data[userID][valueName];
+            if (db.has(`${userID}.${valueName}`).value()) {
+                db.unset(`${userID}.${valueName}`).write();
                 
                 // Clean up empty user objects
-                if (Object.keys(db.data[userID]).length === 0) {
-                    delete db.data[userID];
+                if (db.has(userID).value() && Object.keys(db.get(userID).value()).length === 0) {
+                    db.unset(userID).write();
                 }
-                
-                await db.write();
             }
             return true;
         } catch (error) {
@@ -99,11 +87,10 @@ module.exports = {
     // Read from local storage
     /* ------------------------------------------------------------------------------ */
 
-    storage_read_local_storage: async function(userID, valueName) {    
+    storage_read_local_storage: function(userID, valueName) {    
         try {
-            await db.read();
-            if (db.data[userID] && db.data[userID][valueName] !== undefined) {
-                return db.data[userID][valueName];
+            if (db.has(`${userID}.${valueName}`).value()) {
+                return db.get(`${userID}.${valueName}`).value();
             }
             return undefined;
         } catch (error) {
@@ -122,10 +109,9 @@ module.exports = {
     // Get all user data (for debugging/admin purposes)
     /* ------------------------------------------------------------------------------ */
 
-    storage_get_all_users: async function() {
+    storage_get_all_users: function() {
         try {
-            await db.read();
-            return db.data || {};
+            return db.getState() || {};
         } catch (error) {
             var errorMessage = "storage_get_all_users: Can't read all users from local storage.";
             if(config.bot.errorLogging){
@@ -142,12 +128,10 @@ module.exports = {
     // Clear all data for a user
     /* ------------------------------------------------------------------------------ */
 
-    storage_clear_user_data: async function(userID) {
+    storage_clear_user_data: function(userID) {
         try {
-            await db.read();
-            if (db.data[userID]) {
-                delete db.data[userID];
-                await db.write();
+            if (db.has(userID).value()) {
+                db.unset(userID).write();
             }
             return true;
         } catch (error) {
