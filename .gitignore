@@ -3,6 +3,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
 
 # Runtime data
 pids
@@ -12,6 +13,7 @@ pids
 
 # Coverage directory used by tools like istanbul
 coverage/
+*.lcov
 
 # nyc test coverage
 .nyc_output
@@ -29,11 +31,13 @@ bower_components
 build/Release
 
 # Dependency directories
-node_modules/
 jspm_packages/
 
 # TypeScript v1 declaration files
 typings/
+
+# TypeScript cache
+*.tsbuildinfo
 
 # Optional npm cache directory
 .npm
@@ -60,39 +64,50 @@ typings/
 .cache
 .parcel-cache
 
-# next.js build output
+# Next.js build output
 .next
 
-# nuxt.js build output
+# Nuxt.js build / generate output
 .nuxt
+dist
 
-# vuepress build output
-.vuepress/dist
+# Gatsby files
+.cache/
+public
 
-# Serverless directories
-.serverless
+# Storybook build outputs
+.out
+.storybook-out
 
-# FuseBox cache
-.fusebox/
+# Temporary folders
+tmp/
+temp/
 
-# DynamoDB Local files
-.dynamodb/
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+discordbot.log
 
-# TernJS port file
-.tern-port
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
 
 # Bot specific files
 config.js
-discordbot.log
-*.log
+avatar.png
 
-# Database files
-lowdb/
+# Database files (keep structure, ignore content)
+lowdb/lowdb.json
 storage/
-
-# Temporary files
-tmp/
-temp/
+*.db
+*.sqlite
+*.sqlite3
 
 # OS generated files
 .DS_Store
@@ -110,5 +125,13 @@ Thumbs.db
 *.swo
 *~
 
-# Package lock files (optional - uncomment if you want to ignore)
-# package-lock.json
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
