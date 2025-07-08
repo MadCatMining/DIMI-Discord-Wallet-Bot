@@ -1,0 +1,22 @@
+{
+  "watch": [
+    "index.js",
+    "functions/",
+    "config.js"
+  ],
+  "ignore": [
+    "node_modules/",
+    "lowdb/",
+    "storage/",
+    "*.log",
+    "discordbot.log",
+    "package-lock.json",
+    ".git/"
+  ],
+  "ext": "js,json",
+  "delay": "1000",
+  "verbose": true,
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
