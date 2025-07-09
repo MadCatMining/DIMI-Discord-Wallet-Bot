@@ -32,6 +32,7 @@ var balanceCommand = require("../command/balance.js");
 var depositCommand = require("../command/deposit.js");
 var versionCommand = require("../command/version.js");
 var adminCommands = require("../command/admin.js");
+var rainCommand = require("../command/rain.js");
 
 /* ------------------------------------------------------------------------------ */
 // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -108,7 +109,7 @@ module.exports = {
                     this.command_tip(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree);
                     break;
                 case 'rain':
-                    this.command_rain(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree,commandFour,serverUsers,activeUsers);
+                    rainCommand.command_rain(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree,commandFour,serverUsers,activeUsers);
                     break;
                 case 'drop':
                     this.command_drop(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree,commandFour,commandFive);
@@ -173,11 +174,6 @@ module.exports = {
     },
 
     command_tip: function(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_rain: function(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree,commandFour,serverUsers,activeUsers){
         // TODO: Move to separate file
         chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
     },
