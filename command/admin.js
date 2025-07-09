@@ -34,7 +34,7 @@ module.exports = {
 
             var depositCount = 0;
             for(var i = 0; i < deposits.length; i++){
-                if(deposits[i].category === 'receive' && deposits[i].confirmations <= config.wallet.minConfirmationsDeposit){
+                if(deposits[i].category === 'receive' && deposits[i].confirmations < config.wallet.minConfirmationsDeposit){
                     var addDeposit = await transaction.transaction_add_update_deposits_on_db(deposits[i].address,deposits[i].amount,deposits[i].confirmations,deposits[i].txid);
                     if(addDeposit){
                         depositCount++;

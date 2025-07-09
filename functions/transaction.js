@@ -181,11 +181,11 @@ module.exports = {
                     log.log_write_console(error);
                     resolve(false);
                 }else{
-                    connection.execute("INSERT INTO deposits (address,amount,txid,confirmations,credited,coin_price) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE confirmations = ?",[deposit_address,Big(deposit_amount).toString(),deposit_txid,deposit_confirmations,0,coinPrice,deposit_confirmations],function (error, results, fields){
+                    connection.execute("INSERT INTO deposits (address,amount,txid,confirmations,credited,coin_price) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE confirmations = CASE WHEN confirmations < ? THEN ? ELSE confirmations END",[deposit_address,Big(deposit_amount).toString(),deposit_txid,deposit_confirmations,0,coinPrice,config.wallet.minConfirmationsDeposit,deposit_confirmations],function (error, results, fields){
                         mysqlPool.releaseConnection(connection);
                         if(error)
                         {   
-                            var errorMessage = "transaction_add_update_deposits_on_db: MySQL query problem. (INSERT INTO deposits (address,amount,txid,confirmations,credited,coin_price) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE confirmations = ?)";
+                            var errorMessage = "transaction_add_update_deposits_on_db: MySQL query problem. (INSERT INTO deposits (address,amount,txid,confirmations,credited,coin_price) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE confirmations = CASE WHEN confirmations < ? THEN ? ELSE confirmations END)";
                             if(config.bot.errorLogging){
                                 log.log_write_file(errorMessage);
                                 log.log_write_file(error);
