@@ -121,12 +121,30 @@ module.exports = {
     /* ------------------------------------------------------------------------------ */
 
     chat_reply: function(msg,replyType,replyUsername,senderMessageType,replyEmbedColor,replyAuthor,replyTitle,replyFields,replyDescription,replyFooter,replyThumbnail,replyImage,replyTimestamp){
+        // Handle cases where msg is null/undefined (e.g., cron jobs)
+        if(!msg){
+            console.log('Chat reply called without message object (likely from cron job)');
+            return Promise.resolve();
+        }
+        
         if(replyType == 'private'){
+            if(!msg.author){
+                console.log('Cannot send private message - no author available');
+                return Promise.resolve();
+            }
             return msg.author.send({embeds: [this.chat_build_reply(replyType,replyUsername,senderMessageType,replyEmbedColor,replyAuthor,replyTitle,replyFields,replyDescription,replyFooter,replyThumbnail,replyImage,replyTimestamp)]});
         }else if(replyType == 'pool'){
             var poolChannel = globalClient.channels.cache.get(config.bot.stakePoolChannelID);
+            if(!poolChannel){
+                console.log('Pool channel not found or not accessible');
+                return Promise.resolve();
+            }
             return poolChannel.send({embeds: [this.chat_build_reply(replyType,replyUsername,senderMessageType,replyEmbedColor,replyAuthor,replyTitle,replyFields,replyDescription,replyFooter,replyThumbnail,replyImage,replyTimestamp)]});
         }else{
+            if(!msg.channel){
+                console.log('Cannot send message - no channel available');
+                return Promise.resolve();
+            }
             const embed = this.chat_build_reply(replyType,replyUsername,senderMessageType,replyEmbedColor,replyAuthor,replyTitle,replyFields,replyDescription,replyFooter,replyThumbnail,replyImage,replyTimestamp);
             if(embed && typeof embed === 'object'){
                 return msg.channel.send({embeds: [embed]});
