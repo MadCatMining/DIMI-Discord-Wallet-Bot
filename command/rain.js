@@ -101,7 +101,10 @@ module.exports = {
 
             } else if(commandTwo === 'online'){
                 // Rain to online users
-                var onlineUserIds = Object.keys(activeUsers);
+                console.log('Active users object:', activeUsers);
+                console.log('Active users keys:', Object.keys(activeUsers));
+                
+                var onlineUserIds = Object.keys(activeUsers || {});
                 
                 // Filter out the sender and ensure all users are registered
                 var validOnlineUsers = [];
@@ -116,9 +119,12 @@ module.exports = {
                 }
                 
                 rainUserCount = validOnlineUsers.length;
+                
+                console.log('Valid online users count:', rainUserCount);
+                console.log('Valid online users:', validOnlineUsers);
 
                 if(rainUserCount === 0){
-                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,'No online users found.',false,false,false,false);
+                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,'No registered online users found (excluding yourself).',false,false,false,false);
                     return;
                 }
 

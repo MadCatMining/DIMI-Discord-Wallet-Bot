@@ -89,11 +89,12 @@ client.on('messageCreate', msg => {
 
   // Save and delete active users by time
   activeUsers[userID] = currentTimestamp;
-  //console.log('Added/Updated -> '+userID+' t: '+currentTimestamp);
+  console.log('Added/Updated active user -> '+userID+' t: '+currentTimestamp);
+  console.log('Current active users count:', Object.keys(activeUsers).length);
   // -> and remove inactive if no more in timeframe
   for (var key in activeUsers) {
     if(activeUsers[key] < (currentTimestamp-config.bot.activeUserTime)){
-      //console.log('deleted: '+activeUsers[key]+' - id: '+ key);
+      console.log('deleted inactive user: '+activeUsers[key]+' - id: '+ key);
       delete activeUsers[key];
     }
   }
