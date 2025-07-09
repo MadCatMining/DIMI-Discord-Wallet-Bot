@@ -553,7 +553,12 @@ module.exports = {
             // Get user balance
             const userBalance = await user.user_get_balance(userID);
             if(userBalance === false) {
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.w
+                )
+            }
+        }
+    }
+}entWrong,false,false,false,false);
                 return;
             }
 
@@ -1657,7 +1662,9 @@ module.exports = {
                     const addResult = await user.user_add_balance(userReward, stakeUser.discord_id);
                     if(addResult) {
                         // Save payment record
-                        await transaction.transaction_save_payment_to_db(userReward, 'stake', stakeUser.discord_id, config.messages.payment.stake.send);
+                                if(typeof msg !== 'undefined' && msg){
+                                    chat.chat_reply(msg,'embed',false,'DM',config.colors.success,false,false,false,config.messages.creditstakes.manually+' '+creditedStakes+' '+config.messages.creditstakes.transactions,false,false,false,false);
+                                }
                         
                         // Log stake credit
                         log.log_write_database(stakeUser.discord_id, config.messages.log.stakecredit8 + ' ' + stakeUser.discord_id, userReward);
@@ -1673,18 +1680,40 @@ module.exports = {
                 }
             }
 
-            // Mark stake transactions as credited
-            const highestId = Math.max(...stakeTransactions.map(tx => tx.id));
-            await transaction.transaction_set_stake_transactions_credited(highestId);
+                    if(typeof msg !== 'undefined' && msg){
+                        chat.chat_reply(msg,'embed',false,'DM',config.colors.success,false,false,false,config.messages.getstakes.manually+' '+processedStakes+' '+config.messages.getstakes.transactions,false,false,false,false);
+                    }
+                        chat.chat_reply(msg,'embed',false,'DM',config.colors.success,false,false,false,config.messages.creditdeposits.manually+' '+creditedDeposits+' '+config.messages.creditdeposits.deposits,false,false,false,false);
+                    }
+                    if(typeof msg !== 'undefined' && msg){
+                        chat.chat_reply(msg,'embed',false,'DM',config.colors.success,false,false,false,config.messages.getdeposits.manually+' '+processedDeposits+' '+config.messages.getdeposits.deposits,false,false,false,false);
+                    }
+                    if(typeof msg !== 'undefined' && msg){
+                        chat.chat_reply(msg,'embed',false,'DM',config.colors.error,false,config.messages.title.error,false,config.messages.walletOffline,false,false,false,false);
+                    }
+                const highestId = Math.max(...stakeTransactions.map(tx => tx.id));
+                    if(typeof msg !== 'undefined' && msg){
+                        chat.chat_reply(msg,'embed',false,'DM',config.colors.error,false,config.messages.title.error,false,config.messages.walletOffline,false,false,false,false);
+                    }
+            }
 
-            return { 
+                    if(typeof msg !== 'undefined' && msg){
+                        chat.chat_reply(msg,'embed',false,'DM',config.colors.error,false,config.messages.title.error,false,config.messages.walletOffline,false,false,false,false);
+                    }
+                if(typeof msg !== 'undefined' && msg){
+                    chat.chat_reply(msg,'embed',false,'DM',config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                }
                 success: true, 
                 count: stakeTransactions.length, 
                 totalAmount: stakersAmount.toString(),
-                userCount: creditedUsers 
+                if(typeof msg !== 'undefined' && msg){
+                    chat.chat_reply(msg,'embed',false,'DM',config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                }
             };
         } catch (error) {
-            console.error('process_credit_stakes: Error', error);
+                if(typeof msg !== 'undefined' && msg){
+                    chat.chat_reply(msg,'embed',false,'DM',config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                }
             return { success: false, count: 0, totalAmount: 0, userCount: 0 };
         }
     },
@@ -1703,7 +1732,9 @@ module.exports = {
 
             // Check if private message
             if(messageType === 1) { // DM
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.clear.private,false,false,false,false);
+                    if(typeof msg !== 'undefined' && msg){
+                        chat.chat_reply(msg,'embed',false,'DM',config.colors.success,false,false,false,'No stakes to credit',false,false,false,false);
+                    }
                 return;
             }
 
@@ -1713,7 +1744,9 @@ module.exports = {
             // Note: Bulk message deletion would require additional permissions and implementation
             // This is a basic implementation that just deletes the command message
         } catch (error) {
-            console.error('command_clear: Error', error);
+                if(typeof msg !== 'undefined' && msg){
+                    chat.chat_reply(msg,'embed',false,'DM',config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                }
             chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
         }
     }
