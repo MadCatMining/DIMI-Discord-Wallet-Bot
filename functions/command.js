@@ -152,5 +152,53 @@ module.exports = {
             // Always unblock user after command processing
             storage.storage_delete_local_storage(userID,'blocked');
         }
+    },
+
+    /* ------------------------------------------------------------------------------ */
+    // Version command
+    /* ------------------------------------------------------------------------------ */
+
+    command_version: async function(messageFull,userID,userName,messageType,userRole){
+        try {
+            // Get wallet info
+            const walletInfo = await wallet.wallet_get_info();
+            
+            let versionFields = [];
+            
+            if(walletInfo && walletInfo !== 'error'){
+                // Handle different wallet info structures
+                const botVersion = config.bot.version || 'Unknown';
+                const walletVersion = walletInfo.version || walletInfo.walletversion || 'Unknown';
+                const protocolVersion = walletInfo.protocolversion || 'Unknown';
+                const connections = walletInfo.connections || 0;
+                const blocks = walletInfo.blocks || 0;
+                const difficulty = walletInfo.difficulty || 0;
+                
+                versionFields = [
+                    [config.messages.version.botversion, String(botVersion), true],
+                    [config.messages.version.walletversion, String(walletVersion), true],
+                    [config.messages.version.walletprotocolversion, String(protocolVersion), true],
+                    [config.messages.version.walletconnections, String(connections), true],
+                    [config.messages.version.walletblocks, String(blocks), true],
+                    [config.messages.version.walletdifficulty, String(difficulty), true]
+                ];
+            } else {
+                // Wallet offline or error
+                versionFields = [
+                    [config.messages.version.botversion, String(config.bot.version || 'Unknown'), true],
+                    [config.messages.version.walletversion, 'Wallet Offline', true],
+                    [config.messages.version.walletprotocolversion, 'Wallet Offline', true],
+                    [config.messages.version.walletconnections, 'Wallet Offline', true],
+                    [config.messages.version.walletblocks, 'Wallet Offline', true],
+                    [config.messages.version.walletdifficulty, 'Wallet Offline', true]
+                ];
+            }
+            
+            chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.normal,false,config.messages.version.title,versionFields,false,false,false,false,1);
+            
+        } catch (error) {
+            console.error('command_version: Error', error);
+            chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+        }
     }
 };
