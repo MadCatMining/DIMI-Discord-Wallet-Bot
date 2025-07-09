@@ -182,40 +182,50 @@ module.exports = {
     },
 
     /* ------------------------------------------------------------------------------ */
-    // Get wallet info - Updated for newer wallet versions
+    // Get wallet info - Updated for newer wallet versions with proper connections handling
     /* ------------------------------------------------------------------------------ */
 
     wallet_get_info: function(){
         return new Promise((resolve, reject)=>{
-            // Try getwalletinfo first (newer wallets), fallback to getinfo (older wallets)
-            coinClient.getWalletInfo().then(result => {
-                // For newer wallets, we might need additional info from getblockchaininfo
-                coinClient.getBlockchainInfo().then(blockchainInfo => {
-                    // Merge wallet info with blockchain info for compatibility
-                    const combinedInfo = {
-                        ...result,
-                        blocks: blockchainInfo.blocks,
-                        difficulty: blockchainInfo.difficulty,
-                        connections: blockchainInfo.connections || 0
-                    };
-                    resolve(combinedInfo);
-                }).catch(error3 => {
-                    // If getblockchaininfo fails, just return wallet info
-                    resolve(result);
-                });
+            // Try getinfo first (works for most wallets including DiminutiveCoin)
+            coinClient.command('getinfo').then(result => {
+                resolve(result);
             }).catch(error => {
-                // Fallback to getinfo for older wallets
-                coinClient.command('getinfo').then(result2 => {
-                    resolve(result2);
+                // Fallback to getwalletinfo + getnetworkinfo for newer wallets
+                coinClient.getWalletInfo().then(walletResult => {
+                    // Get network info for connections
+                    coinClient.getNetworkInfo().then(networkResult => {
+                        // Get blockchain info for blocks and difficulty
+                        coinClient.getBlockchainInfo().then(blockchainResult => {
+                            // Merge all info together
+                            const combinedInfo = {
+                                ...walletResult,
+                                connections: networkResult.connections || 0,
+                                blocks: blockchainResult.blocks,
+                                difficulty: blockchainResult.difficulty
+                            };
+                            resolve(combinedInfo);
+                        }).catch(error4 => {
+                            // If blockchain info fails, merge wallet + network
+                            const combinedInfo = {
+                                ...walletResult,
+                                connections: networkResult.connections || 0
+                            };
+                            resolve(combinedInfo);
+                        });
+                    }).catch(error3 => {
+                        // If network info fails, just return wallet info
+                        resolve(walletResult);
+                    });
                 }).catch(error2 => {
-                    var errorMessage = "wallet_create_deposit_address: Wallet query problem. (getnewaddress)";
+                    var errorMessage = "wallet_get_info: Wallet query problem. (getinfo/getwalletinfo)";
                     if(config.bot.errorLogging){
                         log.log_write_file(errorMessage);
                         log.log_write_file(error2);
                     }
                     log.log_write_console(errorMessage);
                     log.log_write_console(error2);
-                    resolve('error');
+                    resolve(false);
                 });
             });
         });
