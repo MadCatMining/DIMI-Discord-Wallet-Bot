@@ -34,22 +34,14 @@ module.exports = {
 
             var depositCount = 0;
             for(var i = 0; i < deposits.length; i++){
-                // Debug logging
-                if(deposits[i].category === 'receive'){
-                    console.log(`Debug: Processing deposit ${deposits[i].txid} with ${deposits[i].confirmations} confirmations`);
-                }
-                
                 if(deposits[i].category === 'receive' && deposits[i].confirmations < config.wallet.minConfirmationsDeposit){
                     // Check if this deposit already exists in database with max confirmations
                     var existingDeposit = await transaction.transaction_get_deposit_by_txid(deposits[i].txid);
-                    console.log(`Debug: Existing deposit check for ${deposits[i].txid}:`, existingDeposit);
                     
                     if(existingDeposit && existingDeposit.confirmations >= config.wallet.minConfirmationsDeposit){
-                        console.log(`Debug: Skipping deposit ${deposits[i].txid} - already at max confirmations (${existingDeposit.confirmations})`);
                         continue; // Skip this deposit as it's already at max confirmations
                     }
                     
-                    console.log(`Debug: Processing deposit ${deposits[i].txid} - wallet: ${deposits[i].confirmations}, db: ${existingDeposit ? existingDeposit.confirmations : 'new'}`);
                     var addDeposit = await transaction.transaction_add_update_deposits_on_db(deposits[i].address,deposits[i].amount,deposits[i].confirmations,deposits[i].txid);
                     if(addDeposit){
                         depositCount++;
