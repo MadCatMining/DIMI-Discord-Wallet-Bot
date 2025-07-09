@@ -203,7 +203,7 @@ if(messageContent.startsWith(config.bot.commandPrefix)){
 
     /// DISABLED AND NOT USED AND OVERWRITTEN ON RAIN FUNCTION // Check if command is rain and get user list from discord server
     var rainCheck = messageContent.split(/ +/);
-    if(rainCheck[0].substr(1) === 'rain' && rainCheck[1] === 'all' || rainCheck[1] === 'random'){
+    if(rainCheck[0].substr(1) === 'rain' && (rainCheck[1] === 'all' || rainCheck[1] === 'random' || rainCheck[1] === 'online')){
       // This crashes the bot if there are to many discord users and multiple channel the bot is in so changed to grab random users from database with maxRainRandomUsers from config as more is not needed because rain all just grabs total count and credits all users
       /*if(client.users){
         Array.from(client.users.filter(user => user.bot == false).values()).forEach(element => {

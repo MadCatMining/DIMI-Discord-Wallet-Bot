@@ -631,261 +631,264 @@ module.exports = {
     // Rain command
     /* ------------------------------------------------------------------------------ */
 
-    command_rain: async function(messageFull,userID,userName,messageType,userRole,rainType,rainAmount,rainUserCount,serverUsers,activeUsers){
         try {
-            // Check if private message
-            if(messageType === 1){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.rain.private,false,false,false,false);
+            // Check if command is enabled
+            if(!config.commands.rain){
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.comingSoon,false,false,false,false);
                 return;
             }
-
+            
             // Check if user is registered
-            const isRegistered = await user.user_registered_check(userID);
-            
-            if(isRegistered === 'error'){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+            var userRegistered = await user.user_registered_check(userID);
+            if(userRegistered == 'error'){
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                return;
+            }
+            if(!userRegistered){
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.accountNotRegistered,false,false,false,false);
                 return;
             }
             
-            if(!isRegistered){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.accountNotRegistered,false,false,false,false);
+            // Check if user is blocked
+            var userBlocked = storage.storage_read_local_storage(userID,'blocked');
+            if(userBlocked){
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.currentlyBlocked,false,false,false,false);
                 return;
             }
-
-            // Validate parameters
-            if(!rainType || !rainAmount){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);
+            
+            // Block user
+            storage.storage_write_local_storage(userID,'blocked',1);
+            
+            // Check if it's a private message
+            if(messageType === 1){ // DM
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.rain.private,false,false,false,false);
+                storage.storage_delete_local_storage(userID,'blocked');
                 return;
             }
-
+            
+            // Validate rain type
+            if(!commandTwo || (commandTwo !== 'all' && commandTwo !== 'online' && commandTwo !== 'random')){
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);
+                storage.storage_delete_local_storage(userID,'blocked');
+                return;
+            }
+            
             // Validate amount
-            if(!check.check_isNumeric(rainAmount) || Big(rainAmount).lte(0)){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);
+            if(!commandThree || !check.check_isNumeric(commandThree) || Big(commandThree).lte(0)){
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);
+                storage.storage_delete_local_storage(userID,'blocked');
                 return;
             }
-
-            // Get user balance
-            const userBalance = await user.user_get_balance(userID);
             
+            var rainAmount = Big(commandThree);
+            
+            // Get user balance
+            var userBalance = await user.user_get_balance(userID);
             if(!userBalance){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                storage.storage_delete_local_storage(userID,'blocked');
                 return;
             }
-
+            
             // Check if user has enough balance
             if(Big(userBalance).lt(rainAmount)){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.rain.big + ' ' + rainAmount + ' ' + config.messages.rain.big1 + ' ' + userBalance + ' ' + config.wallet.coinSymbolShort + config.messages.rain.big2,false,false,false,false);
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.rain.big + ' ' + rainAmount.toString() + ' ' + config.wallet.coinSymbolShort + ' ' + config.messages.rain.big1 + ' ' + userBalance + ' ' + config.wallet.coinSymbolShort + config.messages.rain.big2,false,false,false,false);
+                storage.storage_delete_local_storage(userID,'blocked');
                 return;
             }
-
-            let targetUsers = [];
-            let rainDescription = '';
-
-            if(rainType === 'all'){
+            
+            var rainUsers = [];
+            var rainUserCount = 0;
+            
+            if(commandTwo === 'all'){
                 // Rain to all registered users
-                const totalUsers = await user.user_get_total_count();
-                
+                var totalUsers = await user.user_get_total_count();
                 if(!totalUsers || totalUsers.length === 0){
-                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
                     return;
                 }
-
-                const userCount = totalUsers[0].totalusers;
-                const amountPerUser = Big(rainAmount).div(userCount);
-
-                // Check minimum amount per user
-                if(amountPerUser.lt(config.wallet.minTipValue)){
-                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.rain.minimum + ' ' + config.wallet.minTipValue + ' ' + config.messages.rain.minimum1 + ' ' + userCount + ' ' + config.messages.rain.minimum2,false,false,false,false);
-                    return;
-                }
-
-                // Process rain to all users
-                const subtractResult = await user.user_substract_balance(rainAmount, userID);
-                const addResult = await user.user_add_balance_all(amountPerUser);
                 
-                if(!subtractResult || !addResult){
-                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                rainUserCount = totalUsers[0].totalusers;
+                
+                // Check minimum amount per user
+                var amountPerUser = rainAmount.div(rainUserCount);
+                if(amountPerUser.lt(config.wallet.minTipValue)){
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.rain.minimum + ' ' + config.wallet.minTipValue + ' ' + config.wallet.coinSymbolShort + ' ' + config.messages.rain.minimum1 + ' ' + rainUserCount + ' ' + config.messages.rain.minimum2,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
                     return;
                 }
-
+                
+                // Subtract balance from sender
+                var balanceSubtracted = await user.user_substract_balance(rainAmount.toString(),userID);
+                if(!balanceSubtracted){
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
+                    return;
+                }
+                
+                // Add balance to all users
+                var balanceAdded = await user.user_add_balance_all(amountPerUser.toString());
+                if(!balanceAdded){
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
+                    return;
+                }
+                
+                // Log transaction
+                log.log_write_database(userID,config.messages.log.rain + ' ' + rainUserCount + ' ' + config.messages.log.rain1,rainAmount.toString());
+                
                 // Save payment to database
-                const saveResult = await transaction.transaction_save_payment_to_db(rainAmount, userID, 'rainall', config.messages.payment.tip.send);
-
-                // Log rain
-                log.log_write_database(userID, config.messages.log.rain + ' ' + userCount + ' ' + config.messages.log.rain1, rainAmount);
-
-                rainDescription = config.messages.rain.description;
-
-                const rainFields = [
-                    [config.messages.rain.amount, rainAmount + ' ' + config.wallet.coinSymbolShort, true],
-                    [config.messages.rain.rounded, amountPerUser.toFixed(8) + ' ' + config.wallet.coinSymbolShort, true],
-                    [config.messages.rain.users, userCount, true],
-                    [config.messages.rain.each, amountPerUser.toFixed(8) + ' ' + config.wallet.coinSymbolShort, true]
-                ];
-
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.success,false,config.messages.rain.title,rainFields,rainDescription,false,false,false,1);
-
-            } else if(rainType === 'random'){
-                // Validate user count
-                if(!rainUserCount || !check.check_isNumeric(rainUserCount) || parseInt(rainUserCount) <= 0){
-                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);
-                    return;
-                }
-
-                const userCount = parseInt(rainUserCount);
-
-                // Check maximum random users
-                if(userCount > config.wallet.maxRainRandomUsers){
-                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.rain.randommax + ' ' + config.wallet.maxRainRandomUsers + ' ' + config.messages.rain.randommax1,false,false,false,false);
-                    return;
-                }
-
-                // Get random users
-                const randomUsers = await user.user_get_discord_ids(userCount);
+                transaction.transaction_save_payment_to_db(rainAmount.toString(),userID,'rainall',config.messages.payment.rain.send);
                 
-                if(!randomUsers || randomUsers.length === 0){
-                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                // Send success message
+                var replyFields = [
+                    [config.messages.rain.amount,rainAmount.toString() + ' ' + config.wallet.coinSymbolShort + ' (' + config.messages.rain.rounded + ' ' + amountPerUser.toString() + ' ' + config.wallet.coinSymbolShort + ')',true],
+                    [config.messages.rain.users,rainUserCount.toString(),true],
+                    [config.messages.rain.each,amountPerUser.toString() + ' ' + config.wallet.coinSymbolShort,true]
+                ];
+                
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.success,false,config.messages.rain.title,replyFields,config.messages.rain.description,false,false,false,false);
+                
+            } else if(commandTwo === 'online'){
+                // Rain to online users
+                var onlineUserCount = Object.keys(activeUsers).length;
+                if(onlineUserCount === 0){
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
                     return;
                 }
-
-                const actualUserCount = randomUsers.length;
-                const amountPerUser = Big(rainAmount).div(actualUserCount);
-
+                
                 // Check minimum amount per user
+                var amountPerUser = rainAmount.div(onlineUserCount);
                 if(amountPerUser.lt(config.wallet.minTipValue)){
-                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.rain.minimum + ' ' + config.wallet.minTipValue + ' ' + config.messages.rain.minimum1 + ' ' + actualUserCount + ' ' + config.messages.rain.minimum2,false,false,false,false);
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.rain.minimum + ' ' + config.wallet.minTipValue + ' ' + config.wallet.coinSymbolShort + ' ' + config.messages.rain.minimum1 + ' ' + onlineUserCount + ' ' + config.messages.rain.minimum2,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
                     return;
                 }
-
-                // Process rain
-                const subtractResult = await user.user_substract_balance(rainAmount, userID);
                 
-                if(!subtractResult){
-                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                // Subtract balance from sender
+                var balanceSubtracted = await user.user_substract_balance(rainAmount.toString(),userID);
+                if(!balanceSubtracted){
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
                     return;
                 }
-
+                
+                // Add balance to each online user
+                var successCount = 0;
+                for(var activeUserID in activeUsers){
+                    if(activeUserID !== userID){ // Don't rain to self
+                        var userRegisteredCheck = await user.user_registered_check(activeUserID);
+                        if(userRegisteredCheck){
+                            var balanceAdded = await user.user_add_balance(amountPerUser.toString(),activeUserID);
+                            if(balanceAdded){
+                                successCount++;
+                                // Save payment to database
+                                transaction.transaction_save_payment_to_db(amountPerUser.toString(),userID,activeUserID,config.messages.payment.rain.received);
+                            }
+                        }
+                    }
+                }
+                
+                // Log transaction
+                log.log_write_database(userID,config.messages.log.rain + ' ' + successCount + ' ' + config.messages.log.rain1,rainAmount.toString());
+                
+                // Send success message
+                var replyFields = [
+                    [config.messages.rain.amount,rainAmount.toString() + ' ' + config.wallet.coinSymbolShort + ' (' + config.messages.rain.rounded + ' ' + amountPerUser.toString() + ' ' + config.wallet.coinSymbolShort + ')',true],
+                    [config.messages.rain.users,successCount.toString(),true],
+                    [config.messages.rain.each,amountPerUser.toString() + ' ' + config.wallet.coinSymbolShort,true]
+                ];
+                
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.success,false,config.messages.rain.title,replyFields,config.messages.rain.description,false,false,false,false);
+                
+            } else if(commandTwo === 'random'){
+                // Rain to random users
+                if(!commandFour || !check.check_isNumeric(commandFour) || parseInt(commandFour) <= 0){
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
+                    return;
+                }
+                
+                var requestedUserCount = parseInt(commandFour);
+                
+                // Check maximum random users
+                if(requestedUserCount > config.wallet.maxRainRandomUsers){
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.rain.randommax + ' ' + config.wallet.maxRainRandomUsers + ' ' + config.messages.rain.randommax1,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
+                    return;
+                }
+                
+                // Get random users from database
+                var randomUsers = await user.user_get_discord_ids(requestedUserCount);
+                if(!randomUsers || randomUsers.length === 0){
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
+                    return;
+                }
+                
+                var actualUserCount = randomUsers.length;
+                
+                // Check minimum amount per user
+                var amountPerUser = rainAmount.div(actualUserCount);
+                if(amountPerUser.lt(config.wallet.minTipValue)){
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.rain.minimum + ' ' + config.wallet.minTipValue + ' ' + config.wallet.coinSymbolShort + ' ' + config.messages.rain.minimum1 + ' ' + actualUserCount + ' ' + config.messages.rain.minimum2,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
+                    return;
+                }
+                
+                // Subtract balance from sender
+                var balanceSubtracted = await user.user_substract_balance(rainAmount.toString(),userID);
+                if(!balanceSubtracted){
+                    chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                    storage.storage_delete_local_storage(userID,'blocked');
+                    return;
+                }
+                
                 // Add balance to each random user
-                for(const randomUser of randomUsers){
-                    await user.user_add_balance(amountPerUser, randomUser.discord_id);
-                    await transaction.transaction_save_payment_to_db(amountPerUser, userID, randomUser.discord_id, config.messages.payment.tip.send);
+                var successCount = 0;
+                for(var i = 0; i < randomUsers.length; i++){
+                    var randomUserID = randomUsers[i].discord_id;
+                    if(randomUserID !== userID){ // Don't rain to self
+                        var balanceAdded = await user.user_add_balance(amountPerUser.toString(),randomUserID);
+                        if(balanceAdded){
+                            successCount++;
+                            // Save payment to database
+                            transaction.transaction_save_payment_to_db(amountPerUser.toString(),userID,randomUserID,config.messages.payment.rain.received);
+                        }
+                    }
                 }
-
-                // Log rain
-                log.log_write_database(userID, config.messages.log.rain + ' ' + actualUserCount + ' ' + config.messages.log.rain1, rainAmount);
-
-                rainDescription = config.messages.rain.description;
-
-                const rainFields = [
-                    [config.messages.rain.amount, rainAmount + ' ' + config.wallet.coinSymbolShort, true],
-                    [config.messages.rain.rounded, amountPerUser.toFixed(8) + ' ' + config.wallet.coinSymbolShort, true],
-                    [config.messages.rain.users, actualUserCount, true],
-                    [config.messages.rain.each, amountPerUser.toFixed(8) + ' ' + config.wallet.coinSymbolShort, true]
+                
+                // Log transaction
+                log.log_write_database(userID,config.messages.log.rain + ' ' + successCount + ' ' + config.messages.log.rain1,rainAmount.toString());
+                
+                // Send success message
+                var replyFields = [
+                    [config.messages.rain.amount,rainAmount.toString() + ' ' + config.wallet.coinSymbolShort + ' (' + config.messages.rain.rounded + ' ' + amountPerUser.toString() + ' ' + config.wallet.coinSymbolShort + ')',true],
+                    [config.messages.rain.users,successCount.toString(),true],
+                    [config.messages.rain.each,amountPerUser.toString() + ' ' + config.wallet.coinSymbolShort,true]
                 ];
-
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.success,false,config.messages.rain.title,rainFields,rainDescription,false,false,false,1);
-
-            } else {
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);
-                return;
+                
+                chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.success,false,config.messages.rain.title,replyFields,config.messages.rain.description,false,false,false,false);
             }
             
-        } catch (error) {
-            console.error('command_rain: Error', error);
-            chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+            // Unblock user
+            storage.storage_delete_local_storage(userID,'blocked');
+            
+        } catch(error) {
+            var errorMessage = "command_rain: Error processing rain command";
+            if(config.bot.errorLogging){
+                log.log_write_file(errorMessage);
+                log.log_write_file(error);
+            }
+            log.log_write_console(errorMessage);
+            log.log_write_console(error);
+            chat.chat_reply(msg,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+            
+            // Unblock user on error
+            storage.storage_delete_local_storage(userID,'blocked');
         }
-    },
-
-    /* ------------------------------------------------------------------------------ */
-    // Drop command
-    /* ------------------------------------------------------------------------------ */
-
-    command_drop: async function(messageFull,userID,userName,messageType,userRole,dropType,dropAmount,dropTime,dropPhrase){
-        try {
-            // Check if private message
-            if(messageType === 1){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.drop.private,false,false,false,false);
-                return;
-            }
-
-            // Check if user is registered
-            const isRegistered = await user.user_registered_check(userID);
-            
-            if(isRegistered === 'error'){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
-                return;
-            }
-            
-            if(!isRegistered){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.accountNotRegistered,false,false,false,false);
-                return;
-            }
-
-            // Validate parameters
-            if(!dropType || !dropAmount || !dropTime){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);
-                return;
-            }
-
-            // Validate amount
-            if(!check.check_isNumeric(dropAmount) || Big(dropAmount).lte(0)){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);
-                return;
-            }
-
-            // Check minimum drop amount
-            if(Big(dropAmount).lt(config.bot.minDropValue)){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.drop.min + ' ' + config.bot.minDropValue + ' ' + config.wallet.coinSymbolShort,false,false,false,false);
-                return;
-            }
-
-            // Validate time
-            if(!check.check_isNumeric(dropTime) || parseInt(dropTime) < config.bot.dropMinSeconds || parseInt(dropTime) > config.bot.dropMaxSeconds){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.drop.minTime + ' ' + config.bot.dropMinSeconds + '. ' + config.messages.drop.maxTime + ' ' + config.bot.dropMaxSeconds,false,false,false,false);
-                return;
-            }
-
-            // Get user balance
-            const userBalance = await user.user_get_balance(userID);
-            
-            if(!userBalance){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
-                return;
-            }
-
-            // Check if user has enough balance
-            if(Big(userBalance).lt(dropAmount)){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.drop.big + ' ' + dropAmount + ' ' + config.messages.drop.big1 + ' ' + userBalance + ' ' + config.wallet.coinSymbolShort + config.messages.drop.big2,false,false,false,false);
-                return;
-            }
-
-            // Subtract balance immediately
-            const subtractResult = await user.user_substract_balance(dropAmount, userID);
-            
-            if(!subtractResult){
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
-                return;
-            }
-
-            let dropFields = [];
-            let dropMessage;
-
-            if(dropType === 'phrase'){
-                if(!dropPhrase || dropPhrase.length < 3){
-                    chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.notValidCommand,false,false,false,false);
-                    return;
-                }
-
-                dropFields = [
-                    [config.messages.drop.phrase, dropPhrase, false],
-                    [config.messages.drop.amount, dropAmount + ' ' + config.wallet.coinSymbolShort, true],
-                    [config.messages.drop.seconds, dropTime, true]
-                ];
-
-                dropMessage = await chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.special,false,config.messages.drop.title,dropFields,config.messages.drop.dropPhraseReply,false,false,false,1);
-
-                // Store drop info for processing
-                storage.storage_write_local_storage('drop_' + messageFull.channel.id, 'active', {
                     type: 'phrase',
                     phrase: dropPhrase,
                     amount: dropAmount,
