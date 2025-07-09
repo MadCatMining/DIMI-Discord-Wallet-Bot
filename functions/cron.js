@@ -10,6 +10,7 @@ try{
 const Big = require('big.js'); // https://github.com/MikeMcl/big.js -> http://mikemcl.github.io/big.js/
 
 var command = require("./command.js");
+var adminCommands = require("../command/admin.js");
 var check = require("./check.js");
 var transaction = require("./transaction.js");
 
@@ -25,7 +26,7 @@ module.exports = {
 
     cron_get_deposits: function() {
         setInterval(function (){ 
-            command.command_get_deposits(0);
+            adminCommands.command_get_deposits(null);
         }, config.wallet.depositsConfirmationTime*1000);
     },
 
@@ -35,7 +36,7 @@ module.exports = {
 
     cron_credit_deposits: function() {
         setInterval(function (){ 
-            command.command_credit_deposits(0);
+            adminCommands.command_credit_deposits(null);
         }, config.wallet.depositsCreditTime*1000);
     },
 

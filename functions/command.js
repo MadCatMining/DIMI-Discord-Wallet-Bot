@@ -24,6 +24,15 @@ var transaction = require("./transaction.js");
 var user = require("./user.js");
 var wallet = require("./wallet.js");
 
+// Import command modules
+var helpCommand = require("../command/help.js");
+var registerCommand = require("../command/register.js");
+var profileCommand = require("../command/profile.js");
+var balanceCommand = require("../command/balance.js");
+var depositCommand = require("../command/deposit.js");
+var versionCommand = require("../command/version.js");
+var adminCommands = require("../command/admin.js");
+
 /* ------------------------------------------------------------------------------ */
 // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 /* ------------------------------------------------------------------------------ */
@@ -78,19 +87,19 @@ module.exports = {
             // Route to appropriate command handler using full command name
             switch(fullCommandName) {
                 case 'help':
-                    this.command_help(messageFull,userID,userName,messageType,userRole);
+                    helpCommand.command_help(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'register':
-                    this.command_register(messageFull,userID,userName,messageType,userRole);
+                    registerCommand.command_register(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'profile':
-                    this.command_profile(messageFull,userID,userName,messageType,userRole);
+                    profileCommand.command_profile(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'balance':
-                    this.command_balance(messageFull,userID,userName,messageType,userRole);
+                    balanceCommand.command_balance(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'deposit':
-                    this.command_deposit(messageFull,userID,userName,messageType,userRole);
+                    depositCommand.command_deposit(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'withdraw':
                     this.command_withdraw(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree);
@@ -123,13 +132,13 @@ module.exports = {
                     this.command_notify(messageFull,userID,userName,messageType,userRole,commandTwo);
                     break;
                 case 'version':
-                    this.command_version(messageFull,userID,userName,messageType,userRole);
+                    versionCommand.command_version(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'getdeposits':
-                    this.command_get_deposits(messageFull,userID,userName,messageType,userRole);
+                    adminCommands.command_get_deposits(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'creditdeposits':
-                    this.command_credit_deposits(messageFull,userID,userName,messageType,userRole);
+                    adminCommands.command_credit_deposits(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'getstakes':
                     this.command_get_stakes(messageFull,userID,userName,messageType,userRole);
@@ -138,7 +147,7 @@ module.exports = {
                     this.command_credit_stakes(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'clear':
-                    this.command_clear(messageFull,userID,userName,messageType,userRole);
+                    adminCommands.command_clear(messageFull,userID,userName,messageType,userRole);
                     break;
                 default:
                     console.log(`Unknown command: ${fullCommandName}`);
@@ -152,5 +161,69 @@ module.exports = {
             // Always unblock user after command processing
             storage.storage_delete_local_storage(userID,'blocked');
         }
+    },
+
+    /* ------------------------------------------------------------------------------ */
+    // Placeholder methods for commands not yet moved to separate files
+    /* ------------------------------------------------------------------------------ */
+
+    command_withdraw: function(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_tip: function(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_rain: function(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree,commandFour,serverUsers,activeUsers){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_drop: function(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree,commandFour,commandFive){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_history: function(messageFull,userID,userName,messageType,userRole,commandTwo){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_update: function(messageFull,userID,userName,messageType,userRole){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_donate: function(messageFull,userID,userName,messageType,userRole){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_stake: function(messageFull,userID,userName,messageType,userRole,commandTwo){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_unstake: function(messageFull,userID,userName,messageType,userRole,commandTwo){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_notify: function(messageFull,userID,userName,messageType,userRole,commandTwo){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_get_stakes: function(messageFull,userID,userName,messageType,userRole){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
+    },
+
+    command_credit_stakes: function(messageFull,userID,userName,messageType,userRole){
+        // TODO: Move to separate file
+        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
     }
 };
