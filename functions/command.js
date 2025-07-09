@@ -553,7 +553,12 @@ module.exports = {
             // Get user balance
             const userBalance = await user.user_get_balance(userID);
             if(userBalance === false) {
-                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.wentWrong,false,false,false,false);
+                chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.error,false,config.messages.title.error,false,config.messages.w
+                )
+            }
+        }
+    }
+}entWrong,false,false,false,false);
                 return;
             }
 
