@@ -35,6 +35,12 @@ module.exports = {
             var depositCount = 0;
             for(var i = 0; i < deposits.length; i++){
                 if(deposits[i].category === 'receive' && deposits[i].confirmations < config.wallet.minConfirmationsDeposit){
+                    // Check if this deposit already exists in database with max confirmations
+                    var existingDeposit = await transaction.transaction_get_deposit_by_txid(deposits[i].txid);
+                    if(existingDeposit && existingDeposit.confirmations >= config.wallet.minConfirmationsDeposit){
+                        continue; // Skip this deposit as it's already at max confirmations
+                    }
+                    
                     var addDeposit = await transaction.transaction_add_update_deposits_on_db(deposits[i].address,deposits[i].amount,deposits[i].confirmations,deposits[i].txid);
                     if(addDeposit){
                         depositCount++;

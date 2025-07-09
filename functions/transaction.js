@@ -538,6 +538,51 @@ module.exports = {
         });
     },
 
+    /* ------------------------------------------------------------------------------ */
+    // Get deposit by txid to check current confirmation status
+    /* ------------------------------------------------------------------------------ */
+    transaction_get_deposit_by_txid: function(txid){
+        return new Promise((resolve, reject)=>{
+            mysqlPool.getConnection(function(error, connection){
+                if(error){
+                    try
+                        {
+                        mysqlPool.releaseConnection(connection);
+                        }
+                    catch (e){}
+                    var errorMessage = "transaction_get_deposit_by_txid: MySQL connection problem.";
+                    if(config.bot.errorLogging){
+                        log.log_write_file(errorMessage);
+                        log.log_write_file(error);
+                    }
+                    log.log_write_console(errorMessage);
+                    log.log_write_console(error);
+                    resolve(false);
+                }else{
+                    connection.execute("SELECT confirmations FROM deposits WHERE txid = ? LIMIT 1",[txid],function (error, results, fields){
+                        mysqlPool.releaseConnection(connection);
+                        if(error)
+                        {
+                            var errorMessage = "transaction_get_deposit_by_txid: MySQL query problem. (SELECT confirmations FROM deposits WHERE txid = ? LIMIT 1)";
+                            if(config.bot.errorLogging){
+                                log.log_write_file(errorMessage);
+                                log.log_write_file(error);
+                            }
+                            log.log_write_console(errorMessage);
+                            log.log_write_console(error);
+                            resolve(false);
+                        }else{
+                            if(results.length > 0){
+                                resolve(results[0]);
+                            } else {
+                                resolve(null);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    },
 
     /* ------------------------------------------------------------------------------ */
     // Save current coin price to price history table
