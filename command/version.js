@@ -36,8 +36,14 @@ module.exports = {
             if(walletInfo.blocks){
                 replyFields.push([config.messages.version.walletblocks, walletInfo.blocks.toString(), true]);
             }
-            if(walletInfo.difficulty){
-                replyFields.push([config.messages.version.walletdifficulty, walletInfo.difficulty.toString(), true]);
+            if(walletInfo.difficulty !== undefined && walletInfo.difficulty !== null){
+                // Handle different difficulty formats (number, string, or object)
+                var difficultyValue = walletInfo.difficulty;
+                if(typeof difficultyValue === 'object' && difficultyValue['proof-of-stake']){
+                    // Some wallets return difficulty as an object with proof-of-stake property
+                    difficultyValue = difficultyValue['proof-of-stake'];
+                }
+                replyFields.push([config.messages.version.walletdifficulty, difficultyValue.toString(), true]);
             }
 
             chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.normal,false,config.messages.version.title,replyFields,'',false,false,false,false);
