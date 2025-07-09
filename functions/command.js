@@ -1258,23 +1258,11 @@ module.exports = {
 
             // Process each confirmed deposit
             for(var i = 0; i < confirmedDeposits.length; i++) {
-                var deposit = confirmedDeposits[i];
-                
-                // Credit balance to user
-                var creditResult = await user.user_credit_balance(deposit.address, deposit.amount);
-                if(creditResult) {
-                    // Mark deposit as credited
-                    var setCreditedResult = await transaction.transaction_set_deposit_confirmed(deposit.id);
-                    if(setCreditedResult) {
-                        creditedCount++;
-                        
-                        // Get user ID for logging
-                        var userID = await user.user_get_id_by_address(deposit.address);
-                        if(userID && userID !== 'notregisteredaddress') {
-                            log.log_write_database(userID, config.messages.log.transctioncredited + ' ' + deposit.address, Big(deposit.amount).toString());
-                        } else {
-                            log.log_write_database('unknown', config.messages.log.transctioncreditedunknown + ' ' + deposit.address, Big(deposit.amount).toString());
-                        }
+                    // Calculate stake reward using wallet-specific method
+                    const calculatedReward = await wallet.wallet_calculate_stake_reward(transactionDetails);
+                    if(calculatedReward && calculatedReward > 0){
+                        transaction_stake = 1;
+                        stake_amount = Big(calculatedReward).toString();
                     }
                 }
             }

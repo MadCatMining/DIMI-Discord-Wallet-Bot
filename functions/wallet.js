@@ -261,6 +261,121 @@ module.exports = {
                 resolve('error');
             });
         });
+    },
+
+    /* ------------------------------------------------------------------------------ */
+    // Get raw transaction - For modern wallet staking calculations
+    /* ------------------------------------------------------------------------------ */
+
+    wallet_get_raw_transaction: function(txid, verbose = true){
+        return new Promise((resolve, reject)=>{
+            coinClient.getRawTransaction(txid, verbose).then(result => {
+                resolve(result);
+            }).catch(error => {
+                var errorMessage = "wallet_get_raw_transaction: Wallet query problem. (getrawtransaction)";
+                if(config.bot.errorLogging){
+                    log.log_write_file(errorMessage);
+                    log.log_write_file(error);
+                }
+                log.log_write_console(errorMessage);
+                log.log_write_console(error);
+                resolve(false);
+            });
+        });
+    },
+
+    /* ------------------------------------------------------------------------------ */
+    // Calculate stake reward based on wallet mode
+    /* ------------------------------------------------------------------------------ */
+
+    wallet_calculate_stake_reward: async function(tx){
+        if(config.staking.walletMode === 'legacy'){
+            return this.wallet_calculate_legacy_stake_reward(tx);
+        } else if(config.staking.walletMode === 'modern'){
+            return await this.wallet_calculate_modern_stake_reward(tx);
+        } else {
+            var errorMessage = `wallet_calculate_stake_reward: Unsupported wallet mode: ${config.staking.walletMode}`;
+            if(config.bot.errorLogging){
+                log.log_write_file(errorMessage);
+            }
+            log.log_write_console(errorMessage);
+            return null;
+        }
+    },
+
+    /* ------------------------------------------------------------------------------ */
+    // Calculate stake reward for legacy wallets (pre-v13)
+    /* ------------------------------------------------------------------------------ */
+
+    wallet_calculate_legacy_stake_reward: function(tx){
+        if(!tx.details || !Array.isArray(tx.details)){
+            return null;
+        }
+
+        let received = 0;
+        let sent = 0;
+
+        tx.details.forEach(entry => {
+            if(entry.category === 'receive' || entry.category === 'stake'){
+                received += Math.abs(entry.amount);
+            }
+            if(entry.category === 'send'){
+                sent += Math.abs(entry.amount);
+            }
+        });
+
+        const reward = parseFloat((received - sent).toFixed(8));
+        return reward > 0 ? reward : null;
+    },
+
+    /* ------------------------------------------------------------------------------ */
+    // Calculate stake reward for modern wallets (BlackcoinMore v13+)
+    /* ------------------------------------------------------------------------------ */
+
+    wallet_calculate_modern_stake_reward: async function(tx){
+        try {
+            // Get raw transaction data
+            const rawTx = await this.wallet_get_raw_transaction(tx.txid, true);
+            if(!rawTx || !rawTx.vin || !rawTx.vout || rawTx.vout.length < 2){
+                return null;
+            }
+
+            // Sanity check: is this likely a coinstake tx?
+            // vout[0] should be 0 value and nonstandard type for PoS
+            if(rawTx.vout[0].value !== 0 || rawTx.vout[0].scriptPubKey.type !== 'nonstandard'){
+                return null;
+            }
+
+            // Calculate total input value
+            let totalInputValue = 0;
+            for(const input of rawTx.vin){
+                if(input.txid && typeof input.vout === 'number'){
+                    const prevTx = await this.wallet_get_raw_transaction(input.txid, true);
+                    if(prevTx && prevTx.vout && prevTx.vout[input.vout]){
+                        totalInputValue += prevTx.vout[input.vout].value;
+                    }
+                }
+            }
+
+            // Calculate total output value (excluding the first output which is always 0)
+            let totalOutputValue = 0;
+            for(let i = 1; i < rawTx.vout.length; i++){
+                totalOutputValue += rawTx.vout[i].value;
+            }
+
+            const reward = parseFloat((totalOutputValue - totalInputValue).toFixed(8));
+            return reward > 0 ? reward : null;
+
+        } catch(error) {
+            var errorMessage = "wallet_calculate_modern_stake_reward: Error calculating modern stake reward";
+            if(config.bot.errorLogging){
+                log.log_write_file(errorMessage);
+                log.log_write_file(error);
+            }
+            log.log_write_console(errorMessage);
+            log.log_write_console(error);
+            return null;
+        }
     }
 
 };
