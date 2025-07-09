@@ -102,7 +102,20 @@ module.exports = {
             } else if(commandTwo === 'online'){
                 // Rain to online users
                 var onlineUserIds = Object.keys(activeUsers);
-                rainUserCount = onlineUserIds.length;
+                
+                // Filter out the sender and ensure all users are registered
+                var validOnlineUsers = [];
+                for(var i = 0; i < onlineUserIds.length; i++){
+                    var onlineUserId = onlineUserIds[i];
+                    if(onlineUserId !== userID){ // Don't rain to self
+                        var isRegistered = await user.user_registered_check(onlineUserId);
+                        if(isRegistered === true){
+                            validOnlineUsers.push(onlineUserId);
+                        }
+                    }
+                }
+                
+                rainUserCount = validOnlineUsers.length;
 
                 if(rainUserCount === 0){
                     chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,'No online users found.',false,false,false,false);
@@ -118,14 +131,12 @@ module.exports = {
                 }
 
                 // Add balance to each online user
-                for(var i = 0; i < onlineUserIds.length; i++){
-                    var onlineUserId = onlineUserIds[i];
-                    if(onlineUserId !== userID){ // Don't rain to self
-                        var addBalance = await user.user_add_balance(amountPerUser.toString(), onlineUserId);
-                        if(addBalance){
-                            await transaction.transaction_save_payment_to_db(amountPerUser.toString(),userID,onlineUserId,config.messages.payment.drop.received);
-                            rainUsers.push(onlineUserId);
-                        }
+                for(var i = 0; i < validOnlineUsers.length; i++){
+                    var onlineUserId = validOnlineUsers[i];
+                    var addBalance = await user.user_add_balance(amountPerUser.toString(), onlineUserId);
+                    if(addBalance){
+                        await transaction.transaction_save_payment_to_db(amountPerUser.toString(),userID,onlineUserId,config.messages.payment.drop.received);
+                        rainUsers.push(onlineUserId);
                     }
                 }
 
