@@ -40,7 +40,14 @@ module.exports = {
             var embed = new EmbedBuilder();
             // Set embed color
             if(replyEmbedColor){
-                embed.setColor(replyEmbedColor);
+                // Convert color to proper format for Discord.js v14
+                if(typeof replyEmbedColor === 'string' && replyEmbedColor.startsWith('0x')){
+                    embed.setColor(parseInt(replyEmbedColor, 16));
+                } else if(typeof replyEmbedColor === 'number') {
+                    embed.setColor(replyEmbedColor);
+                } else {
+                    embed.setColor(parseInt(replyEmbedColor, 16));
+                }
             }else{
                 embed.setColor(config.colors.normal);
             }
