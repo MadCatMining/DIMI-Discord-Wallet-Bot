@@ -30,9 +30,24 @@ module.exports = {
             if(walletInfo.protocolversion){
                 replyFields.push([config.messages.version.walletprotocolversion, walletInfo.protocolversion.toString(), true]);
             }
-            if(walletInfo.connections !== undefined){
-                replyFields.push([config.messages.version.walletconnections, walletInfo.connections.toString(), true]);
+            
+            // Try to get connections from different sources
+            var connections = 0;
+            if(walletInfo.connections !== undefined && walletInfo.connections !== null){
+                connections = walletInfo.connections;
+            } else {
+                // Try to get network info separately for newer wallets
+                try {
+                    var networkInfo = await wallet.wallet_get_network_info();
+                    if(networkInfo && networkInfo.connections !== undefined){
+                        connections = networkInfo.connections;
+                    }
+                } catch (error) {
+                    console.log('Could not get network info, using 0 connections');
+                }
             }
+            replyFields.push([config.messages.version.walletconnections, connections.toString(), true]);
+            
             if(walletInfo.blocks){
                 replyFields.push([config.messages.version.walletblocks, walletInfo.blocks.toString(), true]);
             }
