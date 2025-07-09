@@ -33,6 +33,16 @@ var depositCommand = require("../command/deposit.js");
 var versionCommand = require("../command/version.js");
 var adminCommands = require("../command/admin.js");
 var rainCommand = require("../command/rain.js");
+var withdrawCommand = require("../command/withdraw.js");
+var tipCommand = require("../command/tip.js");
+var dropCommand = require("../command/drop.js");
+var historyCommand = require("../command/history.js");
+var updateCommand = require("../command/update.js");
+var donateCommand = require("../command/donate.js");
+var stakeCommand = require("../command/stake.js");
+var unstakeCommand = require("../command/unstake.js");
+var notifyCommand = require("../command/notify.js");
+var stakesCommand = require("../command/stakes.js");
 
 /* ------------------------------------------------------------------------------ */
 // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -103,34 +113,34 @@ module.exports = {
                     depositCommand.command_deposit(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'withdraw':
-                    this.command_withdraw(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree);
+                    withdrawCommand.command_withdraw(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree);
                     break;
                 case 'tip':
-                    this.command_tip(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree);
+                    tipCommand.command_tip(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree);
                     break;
                 case 'rain':
                     rainCommand.command_rain(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree,commandFour,serverUsers,activeUsers);
                     break;
                 case 'drop':
-                    this.command_drop(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree,commandFour,commandFive);
+                    dropCommand.command_drop(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree,commandFour,commandFive);
                     break;
                 case 'history':
-                    this.command_history(messageFull,userID,userName,messageType,userRole,commandTwo);
+                    historyCommand.command_history(messageFull,userID,userName,messageType,userRole,commandTwo);
                     break;
                 case 'update':
-                    this.command_update(messageFull,userID,userName,messageType,userRole);
+                    updateCommand.command_update(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'donate':
-                    this.command_donate(messageFull,userID,userName,messageType,userRole);
+                    donateCommand.command_donate(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'stake':
-                    this.command_stake(messageFull,userID,userName,messageType,userRole,commandTwo);
+                    stakeCommand.command_stake(messageFull,userID,userName,messageType,userRole,commandTwo);
                     break;
                 case 'unstake':
-                    this.command_unstake(messageFull,userID,userName,messageType,userRole,commandTwo);
+                    unstakeCommand.command_unstake(messageFull,userID,userName,messageType,userRole,commandTwo);
                     break;
                 case 'notify':
-                    this.command_notify(messageFull,userID,userName,messageType,userRole,commandTwo);
+                    notifyCommand.command_notify(messageFull,userID,userName,messageType,userRole,commandTwo);
                     break;
                 case 'version':
                     versionCommand.command_version(messageFull,userID,userName,messageType,userRole);
@@ -142,10 +152,10 @@ module.exports = {
                     adminCommands.command_credit_deposits(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'getstakes':
-                    this.command_get_stakes(messageFull,userID,userName,messageType,userRole);
+                    stakesCommand.command_get_stakes(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'creditstakes':
-                    this.command_credit_stakes(messageFull,userID,userName,messageType,userRole);
+                    stakesCommand.command_credit_stakes(messageFull,userID,userName,messageType,userRole);
                     break;
                 case 'clear':
                     adminCommands.command_clear(messageFull,userID,userName,messageType,userRole);
@@ -162,64 +172,5 @@ module.exports = {
             // Always unblock user after command processing
             storage.storage_delete_local_storage(userID,'blocked');
         }
-    },
-
-    /* ------------------------------------------------------------------------------ */
-    // Placeholder methods for commands not yet moved to separate files
-    /* ------------------------------------------------------------------------------ */
-
-    command_withdraw: function(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_tip: function(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_drop: function(messageFull,userID,userName,messageType,userRole,commandTwo,commandThree,commandFour,commandFive){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_history: function(messageFull,userID,userName,messageType,userRole,commandTwo){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_update: function(messageFull,userID,userName,messageType,userRole){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_donate: function(messageFull,userID,userName,messageType,userRole){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_stake: function(messageFull,userID,userName,messageType,userRole,commandTwo){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_unstake: function(messageFull,userID,userName,messageType,userRole,commandTwo){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_notify: function(messageFull,userID,userName,messageType,userRole,commandTwo){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_get_stakes: function(messageFull,userID,userName,messageType,userRole){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
-    },
-
-    command_credit_stakes: function(messageFull,userID,userName,messageType,userRole){
-        // TODO: Move to separate file
-        chat.chat_reply(messageFull,'embed',"<@" + userID + ">",messageType,config.colors.warning,false,config.messages.title.warning,false,config.messages.comingSoon,false,false,false,false);
     }
 };

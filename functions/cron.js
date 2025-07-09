@@ -11,6 +11,7 @@ const Big = require('big.js'); // https://github.com/MikeMcl/big.js -> http://mi
 
 var command = require("./command.js");
 var adminCommands = require("../command/admin.js");
+var stakesCommand = require("../command/stakes.js");
 var check = require("./check.js");
 var transaction = require("./transaction.js");
 
@@ -46,7 +47,7 @@ module.exports = {
 
     cron_get_stakes: function() {
         setInterval(function (){ 
-            command.command_get_stakes(0);
+            stakesCommand.command_get_stakes(null);
         }, config.staking.checkTime*1000);
     },
 
@@ -56,7 +57,7 @@ module.exports = {
 
     cron_credit_stakes: function() {
         setInterval(function (){ 
-            command.command_credit_stakes(0);
+            stakesCommand.command_credit_stakes(null);
         }, config.staking.creditTime*1000);
     },
 
