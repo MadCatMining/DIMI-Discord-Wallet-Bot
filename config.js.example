@@ -61,7 +61,8 @@ module.exports = {
         "minWithdrawalValue": 0.00001, // Minimum value for withdrawal
         "minTipValue": 0.00001, // Minimum value for tip 
         "maxRainRandomUsers": 15, // Please take care as the bot can crash if the value is to big as for each user a database query is fired!
-        "donateAddress":"XXXXXXX" // Address for donations
+        "donateAddress":"XXXXXXX", // Address for donations
+        "modernDepositDetection": true // Enable enhanced deposit detection for modern wallets (distinguishes staking transactions from real deposits)
     },
     "coinPrice":{ // If enabled the current coin price will be saved next to each transaction made from the bot and into the price history database table
         "enabled": false,
