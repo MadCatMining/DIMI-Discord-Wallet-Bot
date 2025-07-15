@@ -474,6 +474,7 @@ module.exports = {
         try {
             if(config.staking.debug){
                 console.log(`Checking transaction: ${tx.txid}`);
+                console.log(`Transaction structure:`, JSON.stringify(tx, null, 2));
             }
 
             // tx is already the transaction details from gettransaction
@@ -517,17 +518,18 @@ module.exports = {
                 console.log(`Transaction ${tx.txid} is in a proof-of-stake block`);
             }
 
-            // This is a proof-of-stake transaction, calculate the reward
-            if(!tx.vin || tx.vin.length === 0){
+            // Get the raw transaction to access vin details
+            const rawTx = await this.wallet_get_raw_transaction(tx.txid, 1);
+            if(!rawTx || !rawTx.vin || rawTx.vin.length === 0){
                 if(config.staking.debug){
-                    console.log(`No input transactions found for ${tx.txid}`);
+                    console.log(`No input transactions found in raw transaction for ${tx.txid}`);
                 }
                 return { reward: null, isStake: true };
             }
 
             // Get the input transaction details
-            const inputTxid = tx.vin[0].txid;
-            const inputVout = tx.vin[0].vout;
+            const inputTxid = rawTx.vin[0].txid;
+            const inputVout = rawTx.vin[0].vout;
 
             if(config.staking.debug){
                 console.log(`Getting input transaction: ${inputTxid}, vout: ${inputVout}`);
@@ -547,10 +549,10 @@ module.exports = {
 
             // Get the reward amount (output value, excluding the first output which is always 0)
             let rewardedAmount = 0;
-            if(tx.vout && tx.vout.length > 1){
+            if(rawTx.vout && rawTx.vout.length > 1){
                 // Skip the first output (index 0) as it's always 0 in coinstake transactions
-                for(let i = 1; i < tx.vout.length; i++){
-                    rewardedAmount += tx.vout[i].value;
+                for(let i = 1; i < rawTx.vout.length; i++){
+                    rewardedAmount += rawTx.vout[i].value;
                 }
             }
 
