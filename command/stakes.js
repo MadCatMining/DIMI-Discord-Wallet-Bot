@@ -208,13 +208,20 @@ module.exports = {
             await transaction.transaction_update_stake_transaction_credited(highestTransactionID);
 
             // Send pool notification if configured
-            if(config.bot.stakePoolChannelID && totalStakeForStakers.gt(0)){
+            if(config.bot.stakePoolChannelID && totalStakeForStakers.gt(0) && creditedUsers > 0){
                 var replyFields = [];
-                replyFields.push([config.messages.creditstakes.stakes, totalStakeAmount.toString() + ' ' + config.wallet.coinSymbolShort, true]);
+                replyFields.push([config.messages.creditstakes.stakes, stakesToCredit.length.toString(), true]);
                 replyFields.push([config.messages.creditstakes.amount, totalStakeForStakers.toString() + ' ' + config.wallet.coinSymbolShort, true]);
                 replyFields.push([config.messages.creditstakes.users, creditedUsers.toString(), true]);
 
-                chat.chat_reply(null,'pool',false,'guild',config.colors.success,false,config.messages.creditstakes.title,replyFields,config.messages.creditstakes.description,false,false,false,false);
+                try {
+                    await chat.chat_reply(null,'pool',false,'guild',config.colors.success,false,config.messages.creditstakes.title,replyFields,config.messages.creditstakes.description,false,false,false,false);
+                    if(config.staking.debug){
+                        console.log('Staking pool notification sent successfully');
+                    }
+                } catch (error) {
+                    console.error('Failed to send staking pool notification:', error);
+                }
             }
 
             var replyMessage = messageFull ? config.messages.creditstakes.manually : config.messages.creditstakes.cron;

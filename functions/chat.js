@@ -136,8 +136,12 @@ module.exports = {
         }else if(replyType == 'pool'){
             var poolChannel = globalClient.channels.cache.get(config.bot.stakePoolChannelID);
             if(!poolChannel){
-                console.log('Pool channel not found or not accessible');
+                console.log('Pool channel not found or not accessible. Channel ID:', config.bot.stakePoolChannelID);
+                console.log('Available channels:', Array.from(globalClient.channels.cache.keys()));
                 return Promise.resolve();
+            }
+            if(config.staking && config.staking.debug){
+                console.log('Sending message to pool channel:', config.bot.stakePoolChannelID);
             }
             return poolChannel.send({embeds: [this.chat_build_reply(replyType,replyUsername,senderMessageType,replyEmbedColor,replyAuthor,replyTitle,replyFields,replyDescription,replyFooter,replyThumbnail,replyImage,replyTimestamp)]});
         }else{
