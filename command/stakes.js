@@ -67,13 +67,13 @@ module.exports = {
                 if(isStake){
                     // This is a stake transaction
                     var rewardAmount = stakeReward || 0;
-                    await transaction.transaction_update_stake_transaction(txid, rewardAmount, 1);
+                    await transaction.transaction_update_stake_transaction(txid, rewardAmount, 1, tx.blockhash);
                     if(config.staking.debug){
                         console.log(`Stake found: ${txid} - Reward: ${rewardAmount}`);
                     }
                 } else {
                     // Not a stake transaction (could be proof-of-work or other)
-                    await transaction.transaction_update_stake_transaction(txid, 0, 0);
+                    await transaction.transaction_update_stake_transaction(txid, 0, 0, tx.blockhash);
                     if(config.staking.debug){
                         console.log(`Non-stake transaction: ${txid}`);
                     }

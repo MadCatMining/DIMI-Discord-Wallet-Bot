@@ -457,7 +457,7 @@ module.exports = {
     /* ------------------------------------------------------------------------------ */
     // Update transaction on stake transaction table as checked
     /* ------------------------------------------------------------------------------ */
-    transaction_update_stake_transaction: function(txid,stake_amount,transaction_stake){
+    transaction_update_stake_transaction: function(txid,stake_amount,transaction_stake,block_hash){
         return new Promise((resolve, reject)=>{
             mysqlPool.getConnection(function(error, connection){
                 if(error){
@@ -475,7 +475,7 @@ module.exports = {
                     log.log_write_console(error);
                     resolve(false);
                 }else{
-                    connection.execute("UPDATE transactions SET amount = ?, stake = ?, checked = ? WHERE txid = ?",[stake_amount,transaction_stake,1,txid],function (error, results, fields){
+                    connection.execute("UPDATE transactions SET amount = ?, stake = ?, checked = ?, block = ? WHERE txid = ?",[stake_amount,transaction_stake,1,block_hash,txid],function (error, results, fields){
                         mysqlPool.releaseConnection(connection);
                         if(error)
                         {
