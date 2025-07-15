@@ -295,6 +295,59 @@ module.exports = {
     },
 
     /* ------------------------------------------------------------------------------ */
+    // Get actual deposit amount for modern wallets (distinguish from staking transactions)
+    /* ------------------------------------------------------------------------------ */
+
+    wallet_get_actual_deposit_amount: async function(txid, depositAddress){
+        try {
+            // Get the raw transaction details
+            const rawTx = await this.wallet_get_raw_transaction(txid, true);
+            if(!rawTx || !rawTx.vout){
+                if(config.staking.debug){
+                    console.log(`Could not get raw transaction for ${txid}`);
+                }
+                return null;
+            }
+
+            // Check if this is a staking transaction (vout[0].value = 0)
+            if(rawTx.vout[0] && rawTx.vout[0].value === 0){
+                if(config.staking.debug){
+                    console.log(`Transaction ${txid} is a staking transaction (vout[0].value = 0), skipping deposit processing`);
+                }
+                return null; // This is a staking transaction, not a deposit
+            }
+
+            // Find the vout that matches the deposit address
+            for(let i = 0; i < rawTx.vout.length; i++){
+                const vout = rawTx.vout[i];
+                if(vout.scriptPubKey && vout.scriptPubKey.addresses){
+                    if(vout.scriptPubKey.addresses.includes(depositAddress)){
+                        if(config.staking.debug){
+                            console.log(`Found deposit amount ${vout.value} for address ${depositAddress} in transaction ${txid}`);
+                        }
+                        return vout.value;
+                    }
+                }
+            }
+
+            if(config.staking.debug){
+                console.log(`No matching address found in transaction ${txid}`);
+            }
+            return null;
+
+        } catch(error) {
+            var errorMessage = "wallet_get_actual_deposit_amount: Error getting actual deposit amount";
+            if(config.bot.errorLogging){
+                log.log_write_file(errorMessage);
+                log.log_write_file(error);
+            }
+            log.log_write_console(errorMessage);
+            log.log_write_console(error);
+            return null;
+        }
+    },
+
+    /* ------------------------------------------------------------------------------ */
     // Calculate stake reward based on wallet mode  
     /* ------------------------------------------------------------------------------ */
 
