@@ -274,13 +274,30 @@ module.exports = {
     },
 
     /* ------------------------------------------------------------------------------ */
-    // Get raw transaction - For modern wallet staking calculations
+    // Get raw transaction - For DiminutiveCoin wallet (uses decoderawtransaction)
     /* ------------------------------------------------------------------------------ */
 
-    wallet_get_raw_transaction: function(txid, verbose = true){
+    wallet_get_raw_transaction: function(txid, verbose = 1){
         return new Promise((resolve, reject)=>{
-            coinClient.getRawTransaction(txid, verbose).then(result => {
-                resolve(result);
+            // First get the raw hex
+            coinClient.getRawTransaction(txid, 0).then(rawHex => {
+                if(verbose === 0){
+                    resolve(rawHex);
+                } else {
+                    // Decode the raw transaction
+                    coinClient.decodeRawTransaction(rawHex).then(decodedTx => {
+                        resolve(decodedTx);
+                    }).catch(decodeError => {
+                        var errorMessage = "wallet_get_raw_transaction: Wallet decode problem. (decoderawtransaction)";
+                        if(config.bot.errorLogging){
+                            log.log_write_file(errorMessage);
+                            log.log_write_file(decodeError);
+                        }
+                        log.log_write_console(errorMessage);
+                        log.log_write_console(decodeError);
+                        resolve(false);
+                    });
+                }
             }).catch(error => {
                 var errorMessage = "wallet_get_raw_transaction: Wallet query problem. (getrawtransaction)";
                 if(config.bot.errorLogging){
@@ -301,7 +318,7 @@ module.exports = {
     wallet_get_actual_deposit_amount: async function(txid, depositAddress){
         try {
             // Get the raw transaction details
-            const rawTx = await this.wallet_get_raw_transaction(txid, true);
+            const rawTx = await this.wallet_get_raw_transaction(txid, 1);
             if(!rawTx || !rawTx.vout){
                 if(config.staking.debug){
                     console.log(`Could not get raw transaction for ${txid}`);
@@ -517,7 +534,7 @@ module.exports = {
             }
 
             // Get the raw transaction details for the input transaction
-            const inputTxDetails = await this.wallet_get_raw_transaction(inputTxid, true);
+            const inputTxDetails = await this.wallet_get_raw_transaction(inputTxid, 1);
             if(!inputTxDetails || !inputTxDetails.vout || !inputTxDetails.vout[inputVout]){
                 if(config.staking.debug){
                     console.log(`Could not get input transaction details for ${inputTxid}, vout: ${inputVout}`);
