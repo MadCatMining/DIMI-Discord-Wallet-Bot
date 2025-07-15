@@ -398,9 +398,8 @@ module.exports = {
                 console.log(`Checking transaction: ${tx.txid}`);
             }
 
-            // Get the transaction details
-            const txDetails = await this.wallet_get_transaction(tx.txid);
-            if(!txDetails || !txDetails.blockhash){
+            // tx is already the transaction details from gettransaction
+            if(!tx || !tx.blockhash){
                 if(config.staking.debug){
                     console.log(`No transaction details or blockhash for ${tx.txid}`);
                 }
@@ -408,10 +407,10 @@ module.exports = {
             }
 
             // Get the block details to check if it's proof-of-stake
-            const blockDetails = await this.wallet_get_block(txDetails.blockhash);
+            const blockDetails = await this.wallet_get_block(tx.blockhash);
             if(!blockDetails || !blockDetails.flags){
                 if(config.staking.debug){
-                    console.log(`No block details or flags for block ${txDetails.blockhash}`);
+                    console.log(`No block details or flags for block ${tx.blockhash}`);
                 }
                 return { reward: null, isStake: false };
             }
@@ -441,7 +440,7 @@ module.exports = {
             }
 
             // This is a proof-of-stake transaction, calculate the reward
-            if(!txDetails.vin || txDetails.vin.length === 0){
+            if(!tx.vin || tx.vin.length === 0){
                 if(config.staking.debug){
                     console.log(`No input transactions found for ${tx.txid}`);
                 }
@@ -449,8 +448,8 @@ module.exports = {
             }
 
             // Get the input transaction details
-            const inputTxid = txDetails.vin[0].txid;
-            const inputVout = txDetails.vin[0].vout;
+            const inputTxid = tx.vin[0].txid;
+            const inputVout = tx.vin[0].vout;
 
             if(config.staking.debug){
                 console.log(`Getting input transaction: ${inputTxid}, vout: ${inputVout}`);
@@ -469,10 +468,10 @@ module.exports = {
 
             // Get the reward amount (output value, excluding the first output which is always 0)
             let rewardedAmount = 0;
-            if(txDetails.vout && txDetails.vout.length > 1){
+            if(tx.vout && tx.vout.length > 1){
                 // Skip the first output (index 0) as it's always 0 in coinstake transactions
-                for(let i = 1; i < txDetails.vout.length; i++){
-                    rewardedAmount += txDetails.vout[i].value;
+                for(let i = 1; i < tx.vout.length; i++){
+                    rewardedAmount += tx.vout[i].value;
                 }
             }
 
