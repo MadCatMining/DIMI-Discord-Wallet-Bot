@@ -346,14 +346,17 @@ module.exports = {
         try {
             // Get raw transaction data
             const rawTx = await this.wallet_get_raw_transaction(tx.txid, true);
-            if(!rawTx || !rawTx.vin || !rawTx.vout || rawTx.vout.length < 2){
-                return null;
+            // Get the raw transaction details to check vout structure
+            const txDetails = await this.wallet_get_raw_transaction(txid, true);
             }
 
             // Sanity check: is this likely a coinstake tx?
             // vout[0] should be 0 value and nonstandard type for PoS
             if(rawTx.vout[0].value !== 0 || rawTx.vout[0].scriptPubKey.type !== 'nonstandard'){
                 return null;
+                if(config.staking.debug){
+                    console.log(`Transaction ${txid} is a staking transaction (vout[0].value = 0)`);
+                }
             }
 
             // Calculate total input value
@@ -362,11 +365,17 @@ module.exports = {
                 if(input.txid && typeof input.vout === 'number'){
                     const prevTx = await this.wallet_get_raw_transaction(input.txid, true);
                     if(prevTx && prevTx.vout && prevTx.vout[input.vout]){
+                        if(config.staking.debug){
+                            console.log(`Found deposit amount ${vout.value} for address ${depositAddress} in transaction ${txid}`);
+                        }
                         totalInputValue += prevTx.vout[input.vout].value;
                     }
                 }
             }
 
+            if(config.staking.debug){
+                console.log(`No matching address found for ${depositAddress} in transaction ${txid}`);
+            }
             // Calculate total output value (excluding the first output which is always 0)
             let totalOutputValue = 0;
             for(let i = 1; i < rawTx.vout.length; i++){
@@ -455,10 +464,11 @@ module.exports = {
                 console.log(`Getting input transaction: ${inputTxid}, vout: ${inputVout}`);
             }
 
-            const inputTxDetails = await this.wallet_get_transaction(inputTxid);
+            // Get the raw transaction details for the input transaction
+            const inputTxDetails = await this.wallet_get_raw_transaction(inputTxid, true);
             if(!inputTxDetails || !inputTxDetails.vout || !inputTxDetails.vout[inputVout]){
                 if(config.staking.debug){
-                    console.log(`Could not get input transaction details for ${inputTxid}`);
+                    console.log(`Could not get input transaction details for ${inputTxid}, vout: ${inputVout}`);
                 }
                 return { reward: null, isStake: true };
             }

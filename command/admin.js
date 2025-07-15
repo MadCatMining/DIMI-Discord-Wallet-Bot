@@ -35,6 +35,20 @@ module.exports = {
             var depositCount = 0;
             for(var i = 0; i < deposits.length; i++){
                 if(deposits[i].category === 'receive' && deposits[i].confirmations < config.wallet.minConfirmationsDeposit){
+                    // For modern wallets, check if this is actually a deposit or a staking transaction
+                    if(config.wallet.modernDepositDetection){
+                        var actualDepositAmount = await wallet.wallet_get_actual_deposit_amount(deposits[i].txid, deposits[i].address);
+                        if(actualDepositAmount === null){
+                            // This is a staking transaction, skip it
+                            if(config.staking.debug){
+                                console.log(`Skipping staking transaction in deposits: ${deposits[i].txid}`);
+                            }
+                            continue;
+                        }
+                        // Use the actual deposit amount instead of the amount from listtransactions
+                        deposits[i].amount = actualDepositAmount;
+                    }
+                    
                     // Check if this deposit already exists in database with max confirmations
                     var existingDeposit = await transaction.transaction_get_deposit_by_txid(deposits[i].txid);
                     
