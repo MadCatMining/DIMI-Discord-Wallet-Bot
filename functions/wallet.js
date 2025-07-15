@@ -347,16 +347,15 @@ module.exports = {
             // Get raw transaction data
             const rawTx = await this.wallet_get_raw_transaction(tx.txid, true);
             // Get the raw transaction details to check vout structure
-            const txDetails = await this.wallet_get_raw_transaction(txid, true);
-            }
+            const txDetails = await this.wallet_get_raw_transaction(tx.txid, true);
 
             // Sanity check: is this likely a coinstake tx?
             // vout[0] should be 0 value and nonstandard type for PoS
             if(rawTx.vout[0].value !== 0 || rawTx.vout[0].scriptPubKey.type !== 'nonstandard'){
                 return null;
-                if(config.staking.debug){
-                    console.log(`Transaction ${txid} is a staking transaction (vout[0].value = 0)`);
-                }
+            }
+            if(config.staking.debug){
+                console.log(`Transaction ${tx.txid} is a staking transaction (vout[0].value = 0)`);
             }
 
             // Calculate total input value
@@ -366,7 +365,7 @@ module.exports = {
                     const prevTx = await this.wallet_get_raw_transaction(input.txid, true);
                     if(prevTx && prevTx.vout && prevTx.vout[input.vout]){
                         if(config.staking.debug){
-                            console.log(`Found deposit amount ${vout.value} for address ${depositAddress} in transaction ${txid}`);
+                            console.log(`Found deposit amount ${prevTx.vout[input.vout].value} for address in transaction ${tx.txid}`);
                         }
                         totalInputValue += prevTx.vout[input.vout].value;
                     }
@@ -374,7 +373,7 @@ module.exports = {
             }
 
             if(config.staking.debug){
-                console.log(`No matching address found for ${depositAddress} in transaction ${txid}`);
+                console.log(`No matching address found in transaction ${tx.txid}`);
             }
             // Calculate total output value (excluding the first output which is always 0)
             let totalOutputValue = 0;
