@@ -295,7 +295,7 @@ module.exports = {
     },
 
     /* ------------------------------------------------------------------------------ */
-    // Calculate stake reward based on wallet mode
+    // Calculate stake reward based on wallet mode  
     /* ------------------------------------------------------------------------------ */
 
     wallet_calculate_stake_reward: async function(tx){
@@ -303,6 +303,8 @@ module.exports = {
             return this.wallet_calculate_legacy_stake_reward(tx);
         } else if(config.staking.walletMode === 'modern'){
             return await this.wallet_calculate_modern_stake_reward(tx);
+        } else if(config.staking.walletMode === 'diminutivecoin'){
+            return await this.wallet_calculate_diminutivecoin_stake_reward(tx);
         } else {
             var errorMessage = `wallet_calculate_stake_reward: Unsupported wallet mode: ${config.staking.walletMode}`;
             if(config.bot.errorLogging){
@@ -385,6 +387,120 @@ module.exports = {
             log.log_write_console(errorMessage);
             log.log_write_console(error);
             return null;
+        }
+    },
+
+    /* ------------------------------------------------------------------------------ */
+    // Calculate stake reward for DiminutiveCoin wallets
+    /* ------------------------------------------------------------------------------ */
+
+    wallet_calculate_diminutivecoin_stake_reward: async function(tx){
+        try {
+            if(config.staking.debug){
+                console.log(`Checking transaction: ${tx.txid}`);
+            }
+
+            // Get the transaction details
+            const txDetails = await this.wallet_get_transaction(tx.txid);
+            if(!txDetails || !txDetails.blockhash){
+                if(config.staking.debug){
+                    console.log(`No transaction details or blockhash for ${tx.txid}`);
+                }
+                return { reward: null, isStake: false };
+            }
+
+            // Get the block details to check if it's proof-of-stake
+            const blockDetails = await this.wallet_get_block(txDetails.blockhash);
+            if(!blockDetails || !blockDetails.flags){
+                if(config.staking.debug){
+                    console.log(`No block details or flags for block ${txDetails.blockhash}`);
+                }
+                return { reward: null, isStake: false };
+            }
+
+            if(config.staking.debug){
+                console.log(`Block flags: ${blockDetails.flags}`);
+            }
+
+            // Check if this is a proof-of-work block
+            if(blockDetails.flags === 'proof-of-work'){
+                if(config.staking.debug){
+                    console.log(`Transaction ${tx.txid} is in a proof-of-work block`);
+                }
+                return { reward: null, isStake: false };
+            }
+
+            // Check if this is a proof-of-stake block
+            if(blockDetails.flags !== 'proof-of-stake'){
+                if(config.staking.debug){
+                    console.log(`Transaction ${tx.txid} is not in a proof-of-stake block`);
+                }
+                return { reward: null, isStake: false };
+            }
+
+            if(config.staking.debug){
+                console.log(`Transaction ${tx.txid} is in a proof-of-stake block`);
+            }
+
+            // This is a proof-of-stake transaction, calculate the reward
+            if(!txDetails.vin || txDetails.vin.length === 0){
+                if(config.staking.debug){
+                    console.log(`No input transactions found for ${tx.txid}`);
+                }
+                return { reward: null, isStake: true };
+            }
+
+            // Get the input transaction details
+            const inputTxid = txDetails.vin[0].txid;
+            const inputVout = txDetails.vin[0].vout;
+
+            if(config.staking.debug){
+                console.log(`Getting input transaction: ${inputTxid}, vout: ${inputVout}`);
+            }
+
+            const inputTxDetails = await this.wallet_get_transaction(inputTxid);
+            if(!inputTxDetails || !inputTxDetails.vout || !inputTxDetails.vout[inputVout]){
+                if(config.staking.debug){
+                    console.log(`Could not get input transaction details for ${inputTxid}`);
+                }
+                return { reward: null, isStake: true };
+            }
+
+            // Get the staked amount (input value)
+            const stakedAmount = inputTxDetails.vout[inputVout].value;
+
+            // Get the reward amount (output value, excluding the first output which is always 0)
+            let rewardedAmount = 0;
+            if(txDetails.vout && txDetails.vout.length > 1){
+                // Skip the first output (index 0) as it's always 0 in coinstake transactions
+                for(let i = 1; i < txDetails.vout.length; i++){
+                    rewardedAmount += txDetails.vout[i].value;
+                }
+            }
+
+            // Calculate the actual stake reward
+            const stakeReward = parseFloat((rewardedAmount - stakedAmount).toFixed(8));
+
+            if(config.staking.debug){
+                console.log(`Staked amount: ${stakedAmount}`);
+                console.log(`Rewarded amount: ${rewardedAmount}`);
+                console.log(`Stake reward: ${stakeReward}`);
+            }
+
+            return { 
+                reward: stakeReward > 0 ? stakeReward : null, 
+                isStake: true 
+            };
+
+        } catch(error) {
+            var errorMessage = "wallet_calculate_diminutivecoin_stake_reward: Error calculating DiminutiveCoin stake reward";
+            if(config.bot.errorLogging){
+                log.log_write_file(errorMessage);
+                log.log_write_file(error);
+            }
+            log.log_write_console(errorMessage);
+            log.log_write_console(error);
+            return { reward: null, isStake: false };
         }
     }
 

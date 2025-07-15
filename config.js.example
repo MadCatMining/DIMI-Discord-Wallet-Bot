@@ -79,6 +79,9 @@ module.exports = {
         // walletnotify=/path/to/your/bot/folder/transaction.sh %s
         // 3. Check if transactionns are coming in to database
         "walletMode": "legacy", // "legacy" for old-style wallets (pre-v13), "modern" for BlackcoinMore v13+ and similar
+        // "legacy" for old-style wallets (pre-v13)
+        // "modern" for BlackcoinMore v13+ and similar  
+        // "diminutivecoin" for DiminutiveCoin with block flag detection
         "debug": true, // Debug stake credit on console
         "check": true, // If enabled it checks (cron) the saved transaction from walletnotify on database for stakes and calculated the amount
         "checkTime": 60, // Check for new transaction in seconds

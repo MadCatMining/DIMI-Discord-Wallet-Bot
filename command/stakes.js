@@ -45,18 +45,38 @@ module.exports = {
                     continue;
                 }
 
-                // Calculate stake reward based on wallet mode
-                var stakeReward = await wallet.wallet_calculate_stake_reward(tx);
+                // Calculate stake reward and check if it's a stake transaction
+                var stakeResult = await wallet.wallet_calculate_stake_reward(tx);
                 
-                if(stakeReward && stakeReward > 0){
-                    // This is a stake transaction
-                    await transaction.transaction_update_stake_transaction(txid, stakeReward, 1);
-                    if(config.staking.debug){
-                        console.log(`Stake found: ${txid} - Reward: ${stakeReward}`);
+                // Handle different return formats based on wallet mode
+                var stakeReward = null;
+                var isStake = false;
+                
+                if(config.staking.walletMode === 'diminutivecoin'){
+                    // DiminutiveCoin mode returns an object with reward and isStake
+                    if(stakeResult && typeof stakeResult === 'object'){
+                        stakeReward = stakeResult.reward;
+                        isStake = stakeResult.isStake;
                     }
                 } else {
-                    // Not a stake transaction
+                    // Legacy and modern modes return just the reward amount
+                    stakeReward = stakeResult;
+                    isStake = stakeReward && stakeReward > 0;
+                }
+                
+                if(isStake){
+                    // This is a stake transaction
+                    var rewardAmount = stakeReward || 0;
+                    await transaction.transaction_update_stake_transaction(txid, rewardAmount, 1);
+                    if(config.staking.debug){
+                        console.log(`Stake found: ${txid} - Reward: ${rewardAmount}`);
+                    }
+                } else {
+                    // Not a stake transaction (could be proof-of-work or other)
                     await transaction.transaction_update_stake_transaction(txid, 0, 0);
+                    if(config.staking.debug){
+                        console.log(`Non-stake transaction: ${txid}`);
+                    }
                 }
                 
                 checkedCount++;
