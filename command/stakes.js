@@ -52,14 +52,14 @@ module.exports = {
                 var stakeReward = null;
                 var isStake = false;
                 
-                if(config.staking.walletMode === 'diminutivecoin'){
-                    // DiminutiveCoin mode returns an object with reward and isStake
+                if(config.staking.walletMode === 'modern'){
+                    // Modern mode returns an object with reward and isStake
                     if(stakeResult && typeof stakeResult === 'object'){
                         stakeReward = stakeResult.reward;
                         isStake = stakeResult.isStake;
                     }
                 } else {
-                    // Legacy and modern modes return just the reward amount
+                    // Legacy mode returns just the reward amount
                     stakeReward = stakeResult;
                     isStake = stakeReward && stakeReward > 0;
                 }

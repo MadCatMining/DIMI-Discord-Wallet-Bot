@@ -303,8 +303,6 @@ module.exports = {
             return this.wallet_calculate_legacy_stake_reward(tx);
         } else if(config.staking.walletMode === 'modern'){
             return await this.wallet_calculate_modern_stake_reward(tx);
-        } else if(config.staking.walletMode === 'diminutivecoin'){
-            return await this.wallet_calculate_diminutivecoin_stake_reward(tx);
         } else {
             var errorMessage = `wallet_calculate_stake_reward: Unsupported wallet mode: ${config.staking.walletMode}`;
             if(config.bot.errorLogging){
@@ -341,10 +339,10 @@ module.exports = {
     },
 
     /* ------------------------------------------------------------------------------ */
-    // Calculate stake reward for modern wallets (BlackcoinMore v13+)
+    // Calculate stake reward for legacy modern wallets (BlackcoinMore v13+ style)
     /* ------------------------------------------------------------------------------ */
 
-    wallet_calculate_modern_stake_reward: async function(tx){
+    wallet_calculate_legacy_modern_stake_reward: async function(tx){
         try {
             // Get raw transaction data
             const rawTx = await this.wallet_get_raw_transaction(tx.txid, true);
@@ -379,7 +377,7 @@ module.exports = {
             return reward > 0 ? reward : null;
 
         } catch(error) {
-            var errorMessage = "wallet_calculate_modern_stake_reward: Error calculating modern stake reward";
+            var errorMessage = "wallet_calculate_legacy_modern_stake_reward: Error calculating legacy modern stake reward";
             if(config.bot.errorLogging){
                 log.log_write_file(errorMessage);
                 log.log_write_file(error);
@@ -391,10 +389,10 @@ module.exports = {
     },
 
     /* ------------------------------------------------------------------------------ */
-    // Calculate stake reward for DiminutiveCoin wallets
+    // Calculate stake reward for modern wallets with block flag detection
     /* ------------------------------------------------------------------------------ */
 
-    wallet_calculate_diminutivecoin_stake_reward: async function(tx){
+    wallet_calculate_modern_stake_reward: async function(tx){
         try {
             if(config.staking.debug){
                 console.log(`Checking transaction: ${tx.txid}`);
@@ -493,7 +491,7 @@ module.exports = {
             };
 
         } catch(error) {
-            var errorMessage = "wallet_calculate_diminutivecoin_stake_reward: Error calculating DiminutiveCoin stake reward";
+            var errorMessage = "wallet_calculate_modern_stake_reward: Error calculating modern stake reward";
             if(config.bot.errorLogging){
                 log.log_write_file(errorMessage);
                 log.log_write_file(error);
