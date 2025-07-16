@@ -475,7 +475,13 @@ module.exports = {
                     log.log_write_console(error);
                     resolve(false);
                 }else{
-                    connection.execute("UPDATE transactions SET amount = ?, stake = ?, checked = ?, block = ? WHERE txid = ?",[stake_amount,transaction_stake,1,block_hash,txid],function (error, results, fields){
+                    connection.execute("UPDATE transactions SET amount = ?, stake = ?, checked = ?, block = ? WHERE txid = ?",[
+                        stake_amount || 0,
+                        transaction_stake || 0,
+                        1,
+                        block_hash || null,
+                        txid
+                    ],function (error, results, fields){
                         mysqlPool.releaseConnection(connection);
                         if(error)
                         {
