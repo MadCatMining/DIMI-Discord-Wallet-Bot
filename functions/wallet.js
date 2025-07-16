@@ -310,6 +310,9 @@ module.exports = {
             });
         });
     },
+
+    wallet_get_actual_deposit_amount: async function(txid, depositAddress) {
+        try {
             // Get the raw transaction details
             const rawTx = await this.wallet_get_raw_transaction(txid, 1);
             if(!rawTx || !rawTx.vout){
@@ -319,9 +322,9 @@ module.exports = {
                 return null;
             }
 
-                                if(config.staking.debug){
-                                    console.log(`gettransaction details:`, JSON.stringify(prevTxAlt.details, null, 2));
-                                }
+            if(config.staking.debug){
+                console.log(`gettransaction details:`, JSON.stringify(prevTxAlt.details, null, 2));
+            }
             // Check if this is a staking transaction (vout[0].value = 0)
             if(rawTx.vout[0] && rawTx.vout[0].value === 0){
                 if(config.staking.debug){
@@ -431,9 +434,9 @@ module.exports = {
                         console.log(`Input object:`, JSON.stringify(input, null, 2));
                         totalInputValue += prevTx.vout[input.vout].value;
                         if(config.staking.debug){
-                                if(prevTx.vout){
-                                    console.log(`Available vouts:`, prevTx.vout.map((v, i) => `[${i}]: ${v.value}`));
-                                }
+                            if(prevTx.vout){
+                                console.log(`Available vouts:`, prevTx.vout.map((v, i) => `[${i}]: ${v.value}`));
+                            }
                             console.log(`Input value from ${input.txid}[${input.vout}]: ${prevTx.vout[input.vout].value}`);
                         }
                         
@@ -463,21 +466,21 @@ module.exports = {
                         }
                     }
                 }
-                    if(config.staking.debug){
-                        console.log(`Previous transaction result:`, prevTx ? 'SUCCESS' : 'FAILED');
-                        if(prevTx && prevTx.vout){
-                            console.log(`Previous tx has ${prevTx.vout.length} outputs:`);
-                            prevTx.vout.forEach((vout, index) => {
-                                console.log(`  vout[${index}]: value=${vout.value}, n=${vout.n}`);
-                            });
-                            console.log(`Looking for vout[${input.vout}]...`);
-                            if(prevTx.vout[input.vout]){
-                                console.log(`Found vout[${input.vout}]: value=${prevTx.vout[input.vout].value}`);
-                            } else {
-                                console.log(`ERROR: vout[${input.vout}] does not exist!`);
-                            }
+                if(config.staking.debug){
+                    console.log(`Previous transaction result:`, prevTx ? 'SUCCESS' : 'FAILED');
+                    if(prevTx && prevTx.vout){
+                        console.log(`Previous tx has ${prevTx.vout.length} outputs:`);
+                        prevTx.vout.forEach((vout, index) => {
+                            console.log(`  vout[${index}]: value=${vout.value}, n=${vout.n}`);
+                        });
+                        console.log(`Looking for vout[${input.vout}]...`);
+                        if(prevTx.vout[input.vout]){
+                            console.log(`Found vout[${input.vout}]: value=${prevTx.vout[input.vout].value}`);
+                        } else {
+                            console.log(`ERROR: vout[${input.vout}] does not exist!`);
                         }
                     }
+                }
             }
             // Calculate total output value (excluding the first output which is always 0)
             let totalOutputValue = 0;
