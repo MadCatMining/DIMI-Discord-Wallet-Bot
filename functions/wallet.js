@@ -384,8 +384,7 @@ module.exports = {
     /* ------------------------------------------------------------------------------ */
 
     wallet_calculate_legacy_stake_reward: function(tx){
-        // For legacy wallets, we need to use the raw transaction data
-        // to properly calculate stake rewards
+        // For legacy wallets, we use the simplified block mint approach
         return this.wallet_calculate_legacy_modern_stake_reward(tx);
     },
 
@@ -424,14 +423,23 @@ module.exports = {
             if(!blockDetails.flags || blockDetails.flags !== 'proof-of-stake'){
                 if(config.staking.debug){
                     console.log(`Block ${tx.blockhash} is not a proof-of-stake block (flags: ${blockDetails.flags})`);
+                }
+                return null;
             }
 
-            const reward = parseFloat((totalOutputValue - totalInputValue).toFixed(8));
-            
+            // Check if block has mint value
+            if(!blockDetails.mint || blockDetails.mint <= 0){
+                if(config.staking.debug){
+                    console.log(`Block ${tx.blockhash} has no mint value or mint is 0 (mint: ${blockDetails.mint})`);
+                }
+                return null;
+            }
+
+            const reward = parseFloat(blockDetails.mint.toFixed(8));
+
             if(config.staking.debug){
-                console.log(`Total input value: ${totalInputValue}`);
-                console.log(`Total output value: ${totalOutputValue}`);
-                console.log(`Calculated stake reward: ${reward}`);
+                console.log(`Block ${tx.blockhash} is proof-of-stake with mint: ${reward}`);
+                console.log(`Transaction ${tx.txid} stake reward: ${reward}`);
             }
 
             return reward;
@@ -500,62 +508,31 @@ module.exports = {
                 console.log(`Transaction ${tx.txid} is in a proof-of-stake block`);
             }
 
-            // Get the raw transaction to access vin details
-            const rawTx = await this.wallet_get_raw_transaction(tx.txid, 1);
-            if(!rawTx || !rawTx.vin || rawTx.vin.length === 0){
-                if(config.staking.debug){
-                    console.log(`No input transactions found in raw transaction for ${tx.txid}`);
-                }
-                return { reward: null, isStake: true };
-            }
-
-            // Get the input transaction details
-            const inputTxid = rawTx.vin[0].txid;
-            const inputVout = rawTx.vin[0].vout;
-
-            if(config.staking.debug){
-                console.log(`Getting input transaction: ${inputTxid}, vout: ${inputVout}`);
-            }
-
-            // Get the raw transaction details for the input transaction
-            const inputTxDetails = await this.wallet_get_raw_transaction(inputTxid, 1);
-            if(!inputTxDetails || !inputTxDetails.vout || !inputTxDetails.vout[inputVout]){
-                if(config.staking.debug){
-                    console.log(`Could not get input transaction details for ${inputTxid}, vout: ${inputVout}`);
-                }
-                return { reward: null, isStake: true };
-            }
-
-            // Get the staked amount (input value)
-            const stakedAmount = inputTxDetails.vout[inputVout].value;
-
-            // Get the reward amount (output value, excluding the first output which is always 0)
-            let rewardedAmount = 0;
-            if(rawTx.vout && rawTx.vout.length > 1){
-                // Skip the first output (index 0) as it's always 0 in coinstake transactions
-                for(let i = 1; i < rawTx.vout.length; i++){
-                    rewardedAmount += rawTx.vout[i].value;
-                }
-                return null;
-            }
-
             // Check if block has mint value
             if(!blockDetails.mint || blockDetails.mint <= 0){
-                console.log(`Staked amount: ${stakedAmount}`);
+                if(config.staking.debug){
                     console.log(`Block ${tx.blockhash} has no mint value or mint is 0 (mint: ${blockDetails.mint})`);
-                console.log(`Stake reward: ${stakeReward}`);
-                return null;
+                }
+                return { reward: null, isStake: true };
+            }
+
+            const reward = parseFloat(blockDetails.mint.toFixed(8));
+
+            if(config.staking.debug){
+                console.log(`Block ${tx.blockhash} is proof-of-stake with mint: ${reward}`);
+                console.log(`Transaction ${tx.txid} stake reward: ${reward}`);
             }
 
             return { 
-                reward: stakeReward > 0 ? stakeReward : null, 
+                reward: reward, 
                 isStake: true 
             };
-            const reward = parseFloat(blockDetails.mint.toFixed(8));
 
+        } catch(error) {
             var errorMessage = "wallet_calculate_modern_stake_reward: Error calculating modern stake reward";
-                console.log(`Block ${tx.blockhash} is proof-of-stake with mint: ${reward}`);
-                console.log(`Transaction ${tx.txid} stake reward: ${reward}`);
+            if(config.bot.errorLogging){
+                log.log_write_file(errorMessage);
+                log.log_write_file(error);
             }
             log.log_write_console(errorMessage);
             log.log_write_console(error);
