@@ -420,7 +420,7 @@ module.exports = {
             }
 
             // Check if this is a proof-of-stake block
-            if(!blockDetails.flags || blockDetails.flags !== 'proof-of-stake'){
+            if(!blockDetails.flags || !blockDetails.flags.includes('proof-of-stake')){
                 if(config.staking.debug){
                     console.log(`Block ${tx.blockhash} is not a proof-of-stake block (flags: ${blockDetails.flags})`);
                 }
