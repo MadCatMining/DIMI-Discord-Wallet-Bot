@@ -11,6 +11,7 @@ var chat = require("./functions/chat.js");
 var check = require("./functions/check.js");
 var command = require("./functions/command.js");
 var cron = require("./functions/cron.js");
+var migration = require("./functions/migration.js");
 // var storage = require("./functions/storage.js"); 
 var log = require("./functions/log.js");
 
@@ -54,6 +55,18 @@ process.on('unhandledRejection', error => console.error('Uncaught Promise Reject
 
 client.on('ready', () => {
   log.log_write_console(config.messages.botStarted + ` ${client.user.tag}!`);
+  
+  // Run database migrations
+  migration.run_migrations().then(() => {
+    console.log('Database migrations completed successfully.');
+  }).catch((error) => {
+    console.error('Database migration failed:', error);
+    console.log('Please check the database connection and schema.');
+    migration.check_database_schema().catch(() => {
+      console.log('Manual fix required. Please run: ALTER TABLE transactions ADD COLUMN block VARCHAR(64) DEFAULT NULL;');
+    });
+  });
+  
   client.user.setPresence({ 
     status: 'online', 
     activities: [{ 
