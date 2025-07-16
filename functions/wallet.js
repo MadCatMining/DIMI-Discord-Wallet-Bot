@@ -430,16 +430,45 @@ module.exports = {
             let totalInputValue = 0;
             for(const input of rawTx.vin){
                 if(input.txid && typeof input.vout === 'number'){
-                    const prevTx = await this.wallet_get_raw_transaction(input.txid, true);
+                    const prevTx = await this.wallet_get_raw_transaction(input.txid, 1);
                     if(prevTx && prevTx.vout && prevTx.vout[input.vout]){
                         totalInputValue += prevTx.vout[input.vout].value;
                         if(config.staking.debug){
+                                if(prevTx.vout){
+                                    console.log(`Available vouts:`, prevTx.vout.map((v, i) => `[${i}]: ${v.value}`));
+                                }
                             console.log(`Input value from ${input.txid}[${input.vout}]: ${prevTx.vout[input.vout].value}`);
+                        }
+                        
+                        // Try alternative method - use gettransaction instead of getrawtransaction
+                        try {
+                            if(config.staking.debug){
+                                console.log(`Trying gettransaction for ${input.txid}`);
+                            }
+                            const prevTxAlt = await this.wallet_get_transaction(input.txid);
+                            if(prevTxAlt && prevTxAlt.details){
+                                // Find the output that matches our vout index
+                                for(const detail of prevTxAlt.details){
+                                    if(detail.vout === input.vout && detail.category === 'receive'){
+                                        const inputValue = Math.abs(detail.amount);
+                                        totalInputValue += inputValue;
+                                        if(config.staking.debug){
+                                            console.log(`Input value from gettransaction ${input.txid}[${input.vout}]: ${inputValue}`);
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch(altError) {
+                            if(config.staking.debug){
+                                console.log(`Alternative method also failed:`, altError.message);
+                            }
                         }
                     }
                 }
             }
 
+                            console.log(`prevTx result:`, prevTx);
             // Calculate total output value (excluding the first output which is always 0)
             let totalOutputValue = 0;
             for(let i = 1; i < rawTx.vout.length; i++){
