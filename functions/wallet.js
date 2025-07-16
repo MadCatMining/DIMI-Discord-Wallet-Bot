@@ -467,8 +467,6 @@ module.exports = {
                     }
                 }
             }
-
-                            console.log(`prevTx result:`, prevTx);
             // Calculate total output value (excluding the first output which is always 0)
             let totalOutputValue = 0;
             for(let i = 1; i < rawTx.vout.length; i++){
