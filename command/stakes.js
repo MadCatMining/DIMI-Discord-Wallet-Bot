@@ -45,6 +45,17 @@ module.exports = {
                     continue;
                 }
 
+                // Check for orphaned/abandoned transactions
+                var isOrphaned = await this.checkIfTransactionIsOrphaned(tx);
+                if(isOrphaned){
+                    if(config.staking.debug){
+                        console.log(`Transaction ${txid} is orphaned/abandoned, marking as non-stake`);
+                    }
+                    await transaction.transaction_update_stake_transaction(txid, 0, 0, tx.blockhash || '');
+                    checkedCount++;
+                    continue;
+                }
+
                 // Calculate stake reward and check if it's a stake transaction
                 var stakeResult = await wallet.wallet_calculate_stake_reward(tx);
                 
@@ -99,6 +110,55 @@ module.exports = {
         }
     },
 
+    /* ------------------------------------------------------------------------------ */
+    // Check if transaction is orphaned/abandoned
+    /* ------------------------------------------------------------------------------ */
+    checkIfTransactionIsOrphaned: async function(tx){
+        try {
+            // Check for obvious signs of orphaned transaction
+            if(tx.confirmations === 0){
+                if(config.staking.debug){
+                    console.log(`Transaction ${tx.txid} has 0 confirmations`);
+                }
+                return true;
+            }
+
+            // Check for wallet conflicts (indicates orphaned block)
+            if(tx.walletconflicts && tx.walletconflicts.length > 0){
+                if(config.staking.debug){
+                    console.log(`Transaction ${tx.txid} has wallet conflicts: ${tx.walletconflicts.join(', ')}`);
+                }
+                return true;
+            }
+
+            // Check if any details are marked as abandoned
+            if(tx.details && Array.isArray(tx.details)){
+                for(var i = 0; i < tx.details.length; i++){
+                    if(tx.details[i].abandoned === true){
+                        if(config.staking.debug){
+                            console.log(`Transaction ${tx.txid} has abandoned details`);
+                        }
+                        return true;
+                    }
+                }
+            }
+
+            // Check if trusted is false (indicates potential orphan)
+            if(tx.trusted === false){
+                if(config.staking.debug){
+                    console.log(`Transaction ${tx.txid} is not trusted`);
+                }
+                return true;
+            }
+
+            return false;
+            
+        } catch (error) {
+            console.error('checkIfTransactionIsOrphaned: Error', error);
+            // If we can't determine, assume it's orphaned to be safe
+            return true;
+        }
+    },
     /* ------------------------------------------------------------------------------ */
     // Credit stakes to users
     /* ------------------------------------------------------------------------------ */
@@ -209,18 +269,45 @@ module.exports = {
 
             // Send pool notification if configured
             if(config.bot.stakePoolChannelID && totalStakeForStakers.gt(0) && creditedUsers > 0){
+                if(config.staking.debug){
+                    console.log('Preparing to send staking pool notification...');
+                    console.log('Channel ID:', config.bot.stakePoolChannelID);
+                    console.log('Total stake for stakers:', totalStakeForStakers.toString());
+                    console.log('Credited users:', creditedUsers);
+                }
+
                 var replyFields = [];
                 replyFields.push([config.messages.creditstakes.stakes, stakesToCredit.length.toString(), true]);
                 replyFields.push([config.messages.creditstakes.amount, totalStakeForStakers.toString() + ' ' + config.wallet.coinSymbolShort, true]);
                 replyFields.push([config.messages.creditstakes.users, creditedUsers.toString(), true]);
 
                 try {
-                    await chat.chat_reply(null,'pool',false,'guild',config.colors.success,false,config.messages.creditstakes.title,replyFields,config.messages.creditstakes.description,false,false,false,false);
+                    // Get the channel directly and send the message
+                    var poolChannel = globalClient.channels.cache.get(config.bot.stakePoolChannelID);
+                    if(!poolChannel){
+                        console.error('Pool channel not found. Channel ID:', config.bot.stakePoolChannelID);
+                        console.log('Available channels:', Array.from(globalClient.channels.cache.keys()));
+                        return;
+                    }
+
+                    if(config.staking.debug){
+                        console.log('Found pool channel:', poolChannel.name);
+                        console.log('Channel type:', poolChannel.type);
+                    }
+
+                    // Build the embed message
+                    var embed = chat.chat_build_reply('embed', false, 'guild', config.colors.success, false, config.messages.creditstakes.title, replyFields, config.messages.creditstakes.description, false, false, false, false);
+                    
+                    // Send the message
+                    await poolChannel.send({embeds: [embed]});
+                    
                     if(config.staking.debug){
                         console.log('Staking pool notification sent successfully');
                     }
                 } catch (error) {
-                    console.error('Failed to send staking pool notification:', error);
+                    console.error('Failed to send staking pool notification:');
+                    console.error('Error:', error.message);
+                    console.error('Stack:', error.stack);
                 }
             }
 
