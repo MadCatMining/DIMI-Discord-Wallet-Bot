@@ -388,42 +388,40 @@ module.exports = {
     /* ------------------------------------------------------------------------------ */
 
     wallet_calculate_legacy_stake_reward: function(tx){
-        if(!tx.details || !Array.isArray(tx.details)){
-            return null;
-        }
-
-        let received = 0;
-        let sent = 0;
-
-        tx.details.forEach(entry => {
-            if(entry.category === 'receive' || entry.category === 'stake'){
-                received += Math.abs(entry.amount);
-            }
-            if(entry.category === 'send'){
-                sent += Math.abs(entry.amount);
-            }
-        });
-
-        const reward = parseFloat((received - sent).toFixed(8));
-        return reward > 0 ? reward : null;
+        // For legacy wallets, we need to use the raw transaction data
+        // to properly calculate stake rewards
+        return this.wallet_calculate_legacy_modern_stake_reward(tx);
     },
 
     /* ------------------------------------------------------------------------------ */
-    // Calculate stake reward for legacy modern wallets (BlackcoinMore v13+ style)
+    // Calculate stake reward for legacy wallets using raw transaction analysis
     /* ------------------------------------------------------------------------------ */
 
     wallet_calculate_legacy_modern_stake_reward: async function(tx){
         try {
+            if(config.staking.debug){
+                console.log(`Analyzing legacy stake transaction: ${tx.txid}`);
+            }
+
             // Get raw transaction data
             const rawTx = await this.wallet_get_raw_transaction(tx.txid, true);
-            // Get the raw transaction details to check vout structure
-            const txDetails = await this.wallet_get_raw_transaction(tx.txid, true);
+            if(!rawTx || !rawTx.vout || !rawTx.vin){
+                if(config.staking.debug){
+                    console.log(`Could not get raw transaction data for ${tx.txid}`);
+                }
+                return null;
+            }
 
             // Sanity check: is this likely a coinstake tx?
             // vout[0] should be 0 value and nonstandard type for PoS
             if(rawTx.vout[0].value !== 0 || rawTx.vout[0].scriptPubKey.type !== 'nonstandard'){
+                if(config.staking.debug){
+                    console.log(`Transaction ${tx.txid} is not a coinstake transaction`);
+                    console.log(`vout[0].value: ${rawTx.vout[0].value}, type: ${rawTx.vout[0].scriptPubKey.type}`);
+                }
                 return null;
             }
+            
             if(config.staking.debug){
                 console.log(`Transaction ${tx.txid} is a staking transaction (vout[0].value = 0)`);
             }
@@ -434,28 +432,35 @@ module.exports = {
                 if(input.txid && typeof input.vout === 'number'){
                     const prevTx = await this.wallet_get_raw_transaction(input.txid, true);
                     if(prevTx && prevTx.vout && prevTx.vout[input.vout]){
-                        if(config.staking.debug){
-                            console.log(`Found deposit amount ${prevTx.vout[input.vout].value} for address in transaction ${tx.txid}`);
-                        }
                         totalInputValue += prevTx.vout[input.vout].value;
+                        if(config.staking.debug){
+                            console.log(`Input value from ${input.txid}[${input.vout}]: ${prevTx.vout[input.vout].value}`);
+                        }
                     }
                 }
             }
 
-            if(config.staking.debug){
-                console.log(`No matching address found in transaction ${tx.txid}`);
-            }
             // Calculate total output value (excluding the first output which is always 0)
             let totalOutputValue = 0;
             for(let i = 1; i < rawTx.vout.length; i++){
                 totalOutputValue += rawTx.vout[i].value;
+                if(config.staking.debug){
+                    console.log(`Output value vout[${i}]: ${rawTx.vout[i].value}`);
+                }
             }
 
             const reward = parseFloat((totalOutputValue - totalInputValue).toFixed(8));
+            
+            if(config.staking.debug){
+                console.log(`Total input value: ${totalInputValue}`);
+                console.log(`Total output value: ${totalOutputValue}`);
+                console.log(`Calculated stake reward: ${reward}`);
+            }
+            
             return reward > 0 ? reward : null;
 
         } catch(error) {
-            var errorMessage = "wallet_calculate_legacy_modern_stake_reward: Error calculating legacy modern stake reward";
+            var errorMessage = "wallet_calculate_legacy_modern_stake_reward: Error calculating legacy stake reward";
             if(config.bot.errorLogging){
                 log.log_write_file(errorMessage);
                 log.log_write_file(error);
