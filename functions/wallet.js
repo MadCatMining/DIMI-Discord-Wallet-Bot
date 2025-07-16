@@ -322,9 +322,6 @@ module.exports = {
                 return null;
             }
 
-            if(config.staking.debug){
-                console.log(`gettransaction details:`, JSON.stringify(prevTxAlt.details, null, 2));
-            }
             // Check if this is a staking transaction (vout[0].value = 0)
             if(rawTx.vout[0] && rawTx.vout[0].value === 0){
                 if(config.staking.debug){
@@ -403,7 +400,7 @@ module.exports = {
             }
 
             // Get raw transaction data
-            const rawTx = await this.wallet_get_raw_transaction(tx.txid, true);
+            const rawTx = await this.wallet_get_raw_transaction(tx.txid, 1);
             if(!rawTx || !rawTx.vout || !rawTx.vin){
                 if(config.staking.debug){
                     console.log(`Could not get raw transaction data for ${tx.txid}`);
@@ -429,15 +426,37 @@ module.exports = {
             let totalInputValue = 0;
             for(const input of rawTx.vin){
                 if(input.txid && typeof input.vout === 'number'){
-                    const prevTx = await this.wallet_get_raw_transaction(input.txid, 1);
-                    if(prevTx && prevTx.vout && prevTx.vout[input.vout]){
+                    if(config.staking.debug){
+                        console.log(`Getting input transaction: ${input.txid}, vout index: ${input.vout}`);
                         console.log(`Input object:`, JSON.stringify(input, null, 2));
-                        totalInputValue += prevTx.vout[input.vout].value;
-                        if(config.staking.debug){
-                            if(prevTx.vout){
-                                console.log(`Available vouts:`, prevTx.vout.map((v, i) => `[${i}]: ${v.value}`));
+                    }
+                    
+                    const inputTx = await this.wallet_get_raw_transaction(input.txid, 1);
+                    if(config.staking.debug){
+                        console.log(`Input transaction result:`, inputTx ? 'SUCCESS' : 'FAILED');
+                        if(inputTx && inputTx.vout){
+                            console.log(`Input tx has ${inputTx.vout.length} outputs:`);
+                            inputTx.vout.forEach((vout, index) => {
+                                console.log(`  vout[${index}]: value=${vout.value}, n=${vout.n}`);
+                            });
+                            console.log(`Looking for vout[${input.vout}]...`);
+                            if(inputTx.vout[input.vout]){
+                                console.log(`Found vout[${input.vout}]: value=${inputTx.vout[input.vout].value}`);
+                            } else {
+                                console.log(`ERROR: vout[${input.vout}] does not exist!`);
                             }
-                            console.log(`Input value from ${input.txid}[${input.vout}]: ${prevTx.vout[input.vout].value}`);
+                        }
+                    }
+                    
+                    if(inputTx && inputTx.vout && inputTx.vout[input.vout]){
+                        const inputValue = inputTx.vout[input.vout].value;
+                        totalInputValue += inputValue;
+                        if(config.staking.debug){
+                            console.log(`Input value from ${input.txid}[${input.vout}]: ${inputValue}`);
+                        }
+                    } else {
+                        if(config.staking.debug){
+                            console.log(`Could not get input transaction ${input.txid} or vout[${input.vout}]`);
                         }
                         
                         // Try alternative method - use gettransaction instead of getrawtransaction
@@ -445,10 +464,13 @@ module.exports = {
                             if(config.staking.debug){
                                 console.log(`Trying gettransaction for ${input.txid}`);
                             }
-                            const prevTxAlt = await this.wallet_get_transaction(input.txid);
-                            if(prevTxAlt && prevTxAlt.details){
+                            const inputTxAlt = await this.wallet_get_transaction(input.txid);
+                            if(inputTxAlt && inputTxAlt.details){
+                                if(config.staking.debug){
+                                    console.log(`gettransaction details:`, JSON.stringify(inputTxAlt.details, null, 2));
+                                }
                                 // Find the output that matches our vout index
-                                for(const detail of prevTxAlt.details){
+                                for(const detail of inputTxAlt.details){
                                     if(detail.vout === input.vout && detail.category === 'receive'){
                                         const inputValue = Math.abs(detail.amount);
                                         totalInputValue += inputValue;
@@ -466,22 +488,8 @@ module.exports = {
                         }
                     }
                 }
-                if(config.staking.debug){
-                    console.log(`Previous transaction result:`, prevTx ? 'SUCCESS' : 'FAILED');
-                    if(prevTx && prevTx.vout){
-                        console.log(`Previous tx has ${prevTx.vout.length} outputs:`);
-                        prevTx.vout.forEach((vout, index) => {
-                            console.log(`  vout[${index}]: value=${vout.value}, n=${vout.n}`);
-                        });
-                        console.log(`Looking for vout[${input.vout}]...`);
-                        if(prevTx.vout[input.vout]){
-                            console.log(`Found vout[${input.vout}]: value=${prevTx.vout[input.vout].value}`);
-                        } else {
-                            console.log(`ERROR: vout[${input.vout}] does not exist!`);
-                        }
-                    }
-                }
             }
+
             // Calculate total output value (excluding the first output which is always 0)
             let totalOutputValue = 0;
             for(let i = 1; i < rawTx.vout.length; i++){
