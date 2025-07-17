@@ -147,9 +147,7 @@ module.exports = {
                 // Add reaction to the message
                 if(dropMsg){
                     try {
-                        // Add bot reaction as example
-                        await dropMsg.react(config.bot.dropBotReactIcon);
-                        // Also add the actual drop reaction icon
+                        // Add the drop reaction icon as example
                         await dropMsg.react(config.bot.dropReactIcon);
                         // Set up reaction collector on the actual drop message
                         this.setupReactionCollector(dropMsg, dropId, dropIcon, dropTime);
@@ -197,12 +195,12 @@ module.exports = {
         });
     },
 
-    setupReactionCollector: function(messageFull, dropId, dropIcon, dropTime){
+    setupReactionCollector: function(dropMessage, dropId, dropIcon, dropTime){
         const filter = (reaction, user) => {
             return reaction.emoji.name === dropIcon && !user.bot;
         };
         
-        const collector = messageFull.channel.createReactionCollector({ filter, time: dropTime * 1000 });
+        const collector = dropMessage.createReactionCollector({ filter, time: dropTime * 1000 });
 
         collector.on('collect', async (reaction, user) => {
             var participants = storage.storage_read_local_storage(dropId, 'participants') || [];
