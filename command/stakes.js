@@ -40,7 +40,7 @@ module.exports = {
                 var tx = await wallet.wallet_get_transaction(txid);
                 if(!tx){
                     // Mark as checked but not stake if we can't get transaction
-                    await transaction.transaction_update_stake_transaction(txid, 0, 0);
+                    await transaction.transaction_update_stake_transaction(txid, 0, 0, null);
                     checkedCount++;
                     continue;
                 }
@@ -51,7 +51,7 @@ module.exports = {
                     if(config.staking.debug){
                         console.log(`Transaction ${txid} is orphaned/abandoned, marking as non-stake`);
                     }
-                    await transaction.transaction_update_stake_transaction(txid, 0, 0, tx.blockhash || '');
+                    await transaction.transaction_update_stake_transaction(txid, 0, 0, tx.blockhash || null);
                     checkedCount++;
                     continue;
                 }
@@ -78,13 +78,13 @@ module.exports = {
                 if(isStake){
                     // This is a stake transaction
                     var rewardAmount = stakeReward || 0;
-                    await transaction.transaction_update_stake_transaction(txid, rewardAmount, 1, tx.blockhash);
+                    await transaction.transaction_update_stake_transaction(txid, rewardAmount, 1, tx.blockhash || null);
                     if(config.staking.debug){
                         console.log(`Stake found: ${txid} - Reward: ${rewardAmount}`);
                     }
                 } else {
                     // Not a stake transaction (could be proof-of-work or other)
-                    await transaction.transaction_update_stake_transaction(txid, 0, 0, tx.blockhash);
+                    await transaction.transaction_update_stake_transaction(txid, 0, 0, tx.blockhash || null);
                     if(config.staking.debug){
                         console.log(`Non-stake transaction: ${txid}`);
                     }

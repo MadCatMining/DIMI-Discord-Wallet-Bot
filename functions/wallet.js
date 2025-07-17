@@ -29,6 +29,37 @@ const coinClient = new Client({
 const Big = require('big.js'); // https://github.com/MikeMcl/big.js -> http://mikemcl.github.io/big.js/
 
 /* ------------------------------------------------------------------------------ */
+// Retry mechanism for wallet RPC calls during network issues
+/* ------------------------------------------------------------------------------ */
+
+const retryWalletCall = async (walletFunction, maxRetries = 10, baseDelay = 5000) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await walletFunction();
+        } catch (error) {
+            // Check if it's a safe mode error (network disagreement)
+            const isSafeModeError = error.message && (
+                error.message.includes('Safe mode') ||
+                error.message.includes('network does not appear to fully agree') ||
+                error.message.includes('miners appear to be experiencing issues') ||
+                error.code === -2
+            );
+            
+            if (isSafeModeError && attempt < maxRetries) {
+                const delay = baseDelay * Math.pow(1.5, attempt - 1); // Exponential backoff
+                console.log(`Wallet safe mode detected (attempt ${attempt}/${maxRetries}). Retrying in ${delay/1000} seconds...`);
+                console.log(`Error: ${error.message}`);
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+            
+            // If it's not a safe mode error or we've exhausted retries, throw the error
+            throw error;
+        }
+    }
+};
+/* ------------------------------------------------------------------------------ */
 // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 /* ------------------------------------------------------------------------------ */
 
@@ -61,10 +92,12 @@ module.exports = {
 
     wallet_get_latest_deposits: function(){
         return new Promise((resolve, reject)=>{
-            coinClient.listTransactions('*', config.wallet.depositsToCheck).then(result => {
+            const walletCall = () => coinClient.listTransactions('*', config.wallet.depositsToCheck);
+            
+            retryWalletCall(walletCall).then(result => {
                 resolve(result);
             }).catch(error => {
-                var errorMessage = "wallet_get_latest_deposits: Wallet query problem. (listtransactions)";
+                var errorMessage = "wallet_get_latest_deposits: Wallet query problem after retries. (listtransactions)";
                 if(config.bot.errorLogging){
                     log.log_write_file(errorMessage);
                     log.log_write_file(error);
@@ -124,10 +157,12 @@ module.exports = {
 
     wallet_get_transaction: function(txid){
         return new Promise((resolve, reject)=>{
-            coinClient.getTransaction(txid).then(result => {
+            const walletCall = () => coinClient.getTransaction(txid);
+            
+            retryWalletCall(walletCall).then(result => {
                 resolve(result);
             }).catch(error => {
-                var errorMessage = "wallet_get_transaction: Wallet query problem. (gettransaction)";
+                var errorMessage = "wallet_get_transaction: Wallet query problem after retries. (gettransaction)";
                 if(config.bot.errorLogging){
                     log.log_write_file(errorMessage);
                     log.log_write_file(error);
@@ -145,10 +180,12 @@ module.exports = {
 
     wallet_get_block: function(blockhash){
         return new Promise((resolve, reject)=>{
-            coinClient.getBlock(blockhash).then(result => {
+            const walletCall = () => coinClient.getBlock(blockhash);
+            
+            retryWalletCall(walletCall).then(result => {
                 resolve(result);
             }).catch(error => {
-                var errorMessage = "wallet_get_block: Wallet query problem. (getblock)";
+                var errorMessage = "wallet_get_block: Wallet query problem after retries. (getblock)";
                 if(config.bot.errorLogging){
                     log.log_write_file(errorMessage);
                     log.log_write_file(error);
