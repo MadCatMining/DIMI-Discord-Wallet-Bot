@@ -147,11 +147,16 @@ module.exports = {
                 // Add reaction to the message
                 if(dropMsg){
                     try {
-                        await dropMsg.react(dropIcon);
+                        // Add bot reaction as example
+                        await dropMsg.react(config.bot.dropBotReactIcon);
+                        // Also add the actual drop reaction icon
+                        await dropMsg.react(config.bot.dropReactIcon);
                         // Set up reaction collector on the actual drop message
                         this.setupReactionCollector(dropMsg, dropId, dropIcon, dropTime);
                     } catch (error) {
-                        console.log('Failed to add reaction to drop message');
+                        console.log('Failed to add reaction to drop message:', error);
+                        // Still set up collector even if reaction fails
+                        this.setupReactionCollector(dropMsg, dropId, dropIcon, dropTime);
                     }
                 }
             }
@@ -179,10 +184,6 @@ module.exports = {
         collector.on('collect', async (m) => {
             var participants = storage.storage_read_local_storage(dropId, 'participants') || [];
             var userId = m.author.id;
-            var creator = storage.storage_read_local_storage(dropId, 'creator');
-
-            // Don't allow creator to participate
-            if(userId === creator) return;
 
             // Check if user already participated
             if(participants.includes(userId)) return;
@@ -206,10 +207,6 @@ module.exports = {
         collector.on('collect', async (reaction, user) => {
             var participants = storage.storage_read_local_storage(dropId, 'participants') || [];
             var userId = user.id;
-            var creator = storage.storage_read_local_storage(dropId, 'creator');
-
-            // Don't allow creator to participate
-            if(userId === creator) return;
 
             // Check if user already participated
             if(participants.includes(userId)) return;
