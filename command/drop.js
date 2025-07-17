@@ -148,6 +148,8 @@ module.exports = {
                 if(dropMsg){
                     try {
                         await dropMsg.react(dropIcon);
+                        // Set up reaction collector on the actual drop message
+                        this.setupReactionCollector(dropMsg, dropId, dropIcon, dropTime);
                     } catch (error) {
                         console.log('Failed to add reaction to drop message');
                     }
@@ -162,8 +164,6 @@ module.exports = {
             // Set up message/reaction collectors
             if(commandTwo === 'phrase'){
                 this.setupPhraseCollector(messageFull, dropId, dropMessage, dropTime);
-            } else if(commandTwo === 'react'){
-                this.setupReactionCollector(messageFull, dropId, dropIcon, dropTime);
             }
             
         } catch (error) {
@@ -197,9 +197,40 @@ module.exports = {
     },
 
     setupReactionCollector: function(messageFull, dropId, dropIcon, dropTime){
-        // This would need to be implemented with proper reaction collectors
-        // For now, we'll use a simplified approach
-        console.log('Reaction collector setup for drop:', dropId);
+        const filter = (reaction, user) => {
+            return reaction.emoji.name === dropIcon && !user.bot;
+        };
+        
+        const collector = messageFull.channel.createReactionCollector({ filter, time: dropTime * 1000 });
+
+        collector.on('collect', async (reaction, user) => {
+            var participants = storage.storage_read_local_storage(dropId, 'participants') || [];
+            var userId = user.id;
+            var creator = storage.storage_read_local_storage(dropId, 'creator');
+
+            // Don't allow creator to participate
+            if(userId === creator) return;
+
+            // Check if user already participated
+            if(participants.includes(userId)) return;
+
+            // Check if user is registered
+            var userRegistered = await require("../functions/user.js").user_registered_check(userId);
+            if(!userRegistered) return;
+
+            participants.push(userId);
+            storage.storage_write_local_storage(dropId, 'participants', participants);
+            
+            if(config.staking.debug){
+                console.log(`User ${userId} participated in drop ${dropId}. Total participants: ${participants.length}`);
+            }
+        });
+
+        collector.on('end', () => {
+            if(config.staking.debug){
+                console.log(`Reaction collector ended for drop ${dropId}`);
+            }
+        });
     },
 
     endDrop: async function(dropId){
