@@ -543,15 +543,6 @@ module.exports = {
                 console.log(`Transaction ${tx.txid} is in a proof-of-stake block`);
             }
 
-            // For modern wallets, calculate stake reward from transaction structure
-            // Check if this is a generated transaction (stake transaction)
-            if(!tx.generated){
-                if(config.staking.debug){
-                    console.log(`Transaction ${tx.txid} is not a generated transaction`);
-                }
-                return { reward: null, isStake: true };
-            }
-
             // Get the raw transaction to analyze vin/vout
             const rawTx = await this.wallet_get_raw_transaction(tx.txid, 1);
             if(!rawTx || !rawTx.vout || !rawTx.vin){
@@ -569,8 +560,8 @@ module.exports = {
                 }
             }
 
-            // For stake transactions, the reward is typically the difference between outputs and inputs
-            // Since this is a generated transaction, the reward is the total output value
+            // For modern wallets in proof-of-stake blocks, calculate the actual reward
+            // The reward is the total output value from the transaction
             const reward = parseFloat(totalVout.toFixed(8));
 
             if(config.staking.debug){
