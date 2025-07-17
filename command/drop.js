@@ -279,11 +279,17 @@ module.exports = {
             var channel = globalClient.channels.cache.get(dropData.channel);
             if(channel){
                 var replyFields = [];
-                replyFields.push([config.messages.drop.amount, dropData.amount + ' ' + config.wallet.coinSymbolShort, true]);
+                replyFields.push([config.messages.drop.amount, dropData.amount + ' ' + config.wallet.coinSymbolShort, false]);
                 replyFields.push([config.messages.drop.users, participantCount.toString(), true]);
                 replyFields.push([config.messages.drop.each, amountPerUser.toFixed(8) + ' ' + config.wallet.coinSymbolShort, true]);
                 
-                chat.chat_reply({channel: channel},'embed',false,'guild',config.colors.success,false,config.messages.drop.titleSent,replyFields,config.messages.drop.description,false,false,false,false);
+                // Create a mock message object for the channel
+                var mockMessage = {
+                    channel: channel,
+                    author: { id: 'system' }
+                };
+                
+                chat.chat_reply(mockMessage,'embed',false,'guild',config.colors.success,false,config.messages.drop.titleSent,replyFields,config.messages.drop.description,false,false,false,false);
             }
 
             // Clean up storage
