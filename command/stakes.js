@@ -70,7 +70,7 @@ module.exports = {
                         isStake = stakeResult.isStake;
                     }
                 } else {
-                    // Legacy mode returns just the reward amount
+                    // Legacy mode returns just the reward amount (or null)
                     stakeReward = stakeResult;
                     isStake = stakeReward && stakeReward > 0;
                 }
