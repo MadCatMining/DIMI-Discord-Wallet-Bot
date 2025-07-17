@@ -280,6 +280,7 @@ module.exports = {
             if(channel){
                 var replyFields = [];
                 replyFields.push([config.messages.drop.amount, dropData.amount + ' ' + config.wallet.coinSymbolShort, false]);
+                replyFields.push([config.messages.drop.rounded, amountPerUser.times(participantCount).toFixed(8) + ' ' + config.wallet.coinSymbolShort, false]);
                 replyFields.push([config.messages.drop.users, participantCount.toString(), true]);
                 replyFields.push([config.messages.drop.each, amountPerUser.toFixed(8) + ' ' + config.wallet.coinSymbolShort, true]);
                 
@@ -289,7 +290,18 @@ module.exports = {
                     author: { id: 'system' }
                 };
                 
-                chat.chat_reply(mockMessage,'embed',false,'guild',config.colors.success,false,config.messages.drop.titleSent,replyFields,config.messages.drop.description,false,false,false,false);
+                // Include creator mention in description
+                var descriptionWithMention = config.messages.drop.description + ' <@' + dropData.creator + '>';
+                
+                chat.chat_reply(mockMessage,'embed',false,'guild',config.colors.success,false,config.messages.drop.titleSent,replyFields,descriptionWithMention,false,false,false,false);
+                
+                // Send second message with all participant mentions
+                var participantMentions = dropData.participants.map(id => '<@' + id + '>').join(' ');
+                if(participantMentions){
+                    setTimeout(() => {
+                        channel.send(participantMentions);
+                    }, 500); // Small delay to ensure proper message order
+                }
             }
 
             // Clean up storage
