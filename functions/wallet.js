@@ -552,7 +552,8 @@ module.exports = {
                 return { reward: null, isStake: true };
             }
 
-            // Calculate stake reward: sum of all vout values minus input values
+            // Calculate stake reward: output value minus input value
+            // First get the output value (non-zero vout)
             let totalVout = 0;
             for(let i = 0; i < rawTx.vout.length; i++){
                 if(rawTx.vout[i].value > 0){
@@ -560,12 +561,28 @@ module.exports = {
                 }
             }
 
-            // For modern wallets in proof-of-stake blocks, calculate the actual reward
-            // The reward is the total output value from the transaction
-            const reward = parseFloat(totalVout.toFixed(8));
+            // Now get the input value by looking up the previous transaction
+            let totalVin = 0;
+            for(let i = 0; i < rawTx.vin.length; i++){
+                const vin = rawTx.vin[i];
+                if(vin.txid && vin.vout !== undefined){
+                    // Get the previous transaction to find the input value
+                    const prevTx = await this.wallet_get_raw_transaction(vin.txid, 1);
+                    if(prevTx && prevTx.vout && prevTx.vout[vin.vout]){
+                        totalVin += prevTx.vout[vin.vout].value;
+                        if(config.staking.debug){
+                            console.log(`Input ${i}: txid=${vin.txid}, vout=${vin.vout}, value=${prevTx.vout[vin.vout].value}`);
+                        }
+                    }
+                }
+            }
+
+            // Calculate the actual stake reward: output - input
+            const reward = parseFloat((totalVout - totalVin).toFixed(8));
 
             if(config.staking.debug){
                 console.log(`Transaction ${tx.txid} total vout: ${totalVout}`);
+                console.log(`Transaction ${tx.txid} total vin: ${totalVin}`);
                 console.log(`Transaction ${tx.txid} stake reward: ${reward}`);
             }
 
